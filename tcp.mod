@@ -39,6 +39,8 @@ MODULE tcp
         ENDWHILE
     ERROR
         RETRY;
+        
+        
     UNDO
         !Just incase something breaks - panic and close the sockets
         close_sockets;
@@ -53,11 +55,8 @@ MODULE tcp
         
         !Check if virutal controller or real
         !ROBOS =True is real controller
-        IF ROBOS() THEN
-
-        
-            SocketBind server_socket,"192.168.125.1", 8888;
-        
+        IF ROBOS() THEN        
+            SocketBind server_socket,"192.168.125.1", 8888;       
         
         ELSE
             SocketBind server_socket,"127.0.0.1", 8888;
@@ -97,11 +96,11 @@ MODULE tcp
  
         CASE "ECHO":
             !Repeats the string back to the controller
-            SocketSend client_socket\Str:="ECHO_MSG: "+cmd_req;
+            SocketSend client_socket\Str:="ECHO_MSG: "+cmd_req + "!";
 
             !Close the sockets (should fix opening multiple similar sockets)
         CASE "CLOS":
-            SocketSend client_socket\Str:="CLOSING PORT";
+            SocketSend client_socket\Str:="CLOSING PORT" + "!";
             close_sockets;
 
             !Request the robot move to a specific position
@@ -130,7 +129,7 @@ MODULE tcp
         !if unprogrammed/unknown command is sent    
         DEFAULT:
             TPWrite "INVALID CMD: " + cmd_ID;
-            SocketSend client_socket\Str:="UNKNOWN CMD";
+            SocketSend client_socket\Str:="UNKNOWN CMD" + "!";
 
         ENDTEST
 
@@ -155,13 +154,13 @@ MODULE tcp
                     
             !Move the robot to the target
             MoveJ rob_trgt_pos, v1000, z20, tool0;
-            SocketSend client_socket\Str:="MVTO OK";
+            SocketSend client_socket\Str:="MVTO OK" + "!";
         ENDIF
 
         IF NOT ok THEN
             !If something breaks
             TPWrite "Invalid target position";
-            SocketSend client_socket\Str:="INVALID POS";
+            SocketSend client_socket\Str:="INVALID POS" + "!";
         ENDIF
     ENDPROC
     
@@ -185,12 +184,12 @@ MODULE tcp
             MoveAbsJ jnt_trgt, v100, fine, tool0;
             
             !Let the client know the move happened
-            SocketSend client_socket\Str:= "STJT CMPL";
+            SocketSend client_socket\Str:= "STJT CMPL" + "!";
         
         ELSE
             !If something breaks
             TPWrite "Invalid target joints";
-            SocketSend client_socket\Str:="INVALID ANGLES";
+            SocketSend client_socket\Str:="INVALID ANGLES" + "!";
             
         ENDIF
 
@@ -256,7 +255,7 @@ MODULE tcp
     !Sends the current position to the tcp socket
     PROC report_pos()
         
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool0 \WObj:=wobj0));      
+        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool0 \WObj:=wobj0)) + "!";      
 
 
     ENDPROC
@@ -265,11 +264,11 @@ MODULE tcp
     !Sends the current position and force to the tcp socket 
     PROC report_pos_and_force()
         
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool0 \WObj:=wobj0));
+        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool0 \WObj:=wobj0)) + "!";
         
         test_force_vector := FCGetForce(\Tool:=tool0);
         
-        SocketSend client_socket\Str:= ValToStr(test_force_vector);
+        SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
     
     ENDPROC
     
