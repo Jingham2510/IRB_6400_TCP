@@ -94,7 +94,7 @@ MODULE tcp
         !Match case the currently programmed commands
         TEST cmd_ID
 
-
+ 
         CASE "ECHO":
             !Repeats the string back to the controller
             SocketSend client_socket\Str:="ECHO_MSG: "+cmd_req;
@@ -116,8 +116,14 @@ MODULE tcp
         CASE "MVTL":
             move_tool cmd_req;
         
+        !Report the robots current position
         CASE "GTPS":
             report_pos;
+            
+        !Report the robots model number
+        CASE "RMDL":
+            report_model;
+            
             
             
         
@@ -265,6 +271,11 @@ MODULE tcp
         
         SocketSend client_socket\Str:= ValToStr(test_force_vector);
     
+    ENDPROC
+    
+    !Report the robots model
+    PROC report_model()
+        SocketSend client_socket\Str:= GetSysInfo(\RobotType) + "!";        
     ENDPROC
 
     !Procedure to close the sockets
