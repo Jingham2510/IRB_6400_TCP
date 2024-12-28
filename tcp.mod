@@ -264,7 +264,7 @@ MODULE tcp
     !Sends the current orientation to the tcp socket
     PROC report_orientation()
         !Send all of the euler angles
-        SocketSend client_socket\Str:= ValToStr(EulerZYX(\Z, object.rot)) + "," + ValToStr(EurlerZYX(\Y, object.rot)) + "," + ValToStr(EulerZYX(\X, object.rot)) + "!";
+        SocketSend client_socket\Str:= ValToStr(EulerZYX(\Z, tool0.tframe.rot)) + "," + ValToStr(EulerZYX(\Y, tool0.tframe.rot)) + "," + ValToStr(EulerZYX(\X, tool0.tframe.rot)) + "!";
     ENDPROC
     
     
