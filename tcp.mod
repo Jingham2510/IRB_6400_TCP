@@ -119,6 +119,10 @@ MODULE tcp
         CASE "GTPS":
             report_pos;
             
+        !Report the robots current orientation
+        CASE "GTOR":
+            report_orientation;
+            
         !Report the robots model number
         CASE "RMDL":
             report_model;
@@ -253,11 +257,14 @@ MODULE tcp
     ENDPROC
     
     !Sends the current position to the tcp socket
-    PROC report_pos()
-        
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool0 \WObj:=wobj0)) + "!";      
-
-
+    PROC report_pos()        
+        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool0 \WObj:=wobj0)) + "!";  
+    ENDPROC
+    
+    !Sends the current orientation to the tcp socket
+    PROC report_orientation()
+        !Send all of the euler angles
+        SocketSend client_socket\Str:= ValToStr(EulerZYX(\Z, object.rot)) + "," + ValToStr(EurlerZYX(\Y, object.rot)) + "," + ValToStr(EulerZYX(\X, object.rot)) + "!";
     ENDPROC
     
     
