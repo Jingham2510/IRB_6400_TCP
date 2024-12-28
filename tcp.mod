@@ -123,6 +123,10 @@ MODULE tcp
         CASE "GTOR":
             report_orientation;
             
+        !Report the robots current force
+        CASE "GTFC":
+            report_force;
+            
         !Report the robots model number
         CASE "RMDL":
             report_model;
@@ -263,8 +267,23 @@ MODULE tcp
     
     !Sends the current orientation to the tcp socket
     PROC report_orientation()
+        
+        !Bit buggy... doesnt actually report any sort of angle...
+        
         !Send all of the euler angles
-        SocketSend client_socket\Str:= ValToStr(EulerZYX(\Z, tool0.tframe.rot)) + "," + ValToStr(EulerZYX(\Y, tool0.tframe.rot)) + "," + ValToStr(EulerZYX(\X, tool0.tframe.rot)) + "!";
+        SocketSend client_socket\Str:= ValToStr(EulerZYX(\Z, wobj0.oframe.rot)) + "," + ValToStr(EulerZYX(\Y, wobj0.oframe.rot)) + "," + ValToStr(EulerZYX(\X, wobj0.oframe.rot)) + "!";
+        
+    
+        
+    
+    ENDPROC
+    
+    !Report the force being enacted on the robot
+    PROC report_force()
+    
+        test_force_vector := FCGetForce(\Tool:=tool0);
+        SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
+        
     ENDPROC
     
     
