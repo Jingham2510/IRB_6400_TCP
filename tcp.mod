@@ -15,10 +15,10 @@ MODULE tcp
     PROC main()
         
         !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
-        !test_load := FCLoadId();
+        test_load := FCLoadId();
         
         !MOVE HERE
-        !FCCalib test_load;         
+        FCCalib test_load;         
 
         
         
@@ -130,6 +130,10 @@ MODULE tcp
         !Report the robots model number
         CASE "RMDL":
             report_model;
+            
+        !Report the robots joint angles (without external)
+        CASE "GTJA":
+            report_joints;
             
             
             
@@ -301,6 +305,19 @@ MODULE tcp
     !Report the robots model
     PROC report_model()
         SocketSend client_socket\Str:= GetSysInfo(\RobotType) + "!";        
+    ENDPROC
+    
+    !Report the robots joint angles
+    PROC report_joints()
+        !Get the joint angles
+        VAR jointtarget joints;
+        joints := CJointT();
+        
+        !Send the whole thing, c++ can strip the string
+        SocketSend client_socket\Str:= ValToStr(joints) + "!";
+        
+        
+        
     ENDPROC
 
     !Procedure to close the sockets
