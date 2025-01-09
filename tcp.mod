@@ -15,10 +15,10 @@ MODULE tcp
     PROC main()
         
         !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
-        test_load := FCLoadId();
+        !test_load := FCLoadId();
         
         !MOVE HERE
-        FCCalib test_load;         
+        !FCCalib test_load;         
 
         
         
@@ -313,8 +313,7 @@ MODULE tcp
         VAR jointtarget joints;
         joints := CJointT();
         
-        !Send the whole thing, c++ can strip the string
-        SocketSend client_socket\Str:= ValToStr(joints) + "!";
+        SocketSend client_socket\Str:= ValToStr(joints.robax) + "!";
         
         
         
