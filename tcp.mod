@@ -8,7 +8,7 @@ MODULE tcp
     VAR string receive_string;
     VAR string client_ip;
     
-    VAR loaddata test_load :=[0.001,[0,0,0.001],[1,0,0,0],0,0,0];
+    VAR loaddata test_load :=[0.01,[0,0,0.001],[1,0,0,0],0,0,0];
     
     VAR fcforcevector test_force_vector;
 
@@ -16,7 +16,9 @@ MODULE tcp
         
         !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
         !test_load := FCLoadId();
-        
+                
+        !MoveL RelTool( CRobT(\Tool:=tool0 \WObj:=wobj0), 0, 0, 10), v100, fine, tool0;
+               
         !MOVE HERE
         !FCCalib test_load;         
 
@@ -44,6 +46,7 @@ MODULE tcp
     UNDO
         !Just incase something breaks - panic and close the sockets
         close_sockets;
+    
 
     ENDPROC
 
@@ -158,6 +161,8 @@ MODULE tcp
         !Should be able to convert to the robot target directly
         ok:= StrToVal(target_pos,rob_trgt_pos);
 
+
+        
         !Write out the robot target just to check
         TPWrite ValToStr(rob_trgt_pos);
 
@@ -272,10 +277,12 @@ MODULE tcp
     !Sends the current orientation to the tcp socket
     PROC report_orientation()
         
-        !Bit buggy... doesnt actually report any sort of angle...
+        VAR robtarget curr_targ;
+        
+        curr_targ := CRobT(\Tool:=tool0 \WObj:=wobj0);
         
         !Send all of the euler angles
-        SocketSend client_socket\Str:= ValToStr(EulerZYX(\Z, wobj0.oframe.rot)) + "," + ValToStr(EulerZYX(\Y, wobj0.oframe.rot)) + "," + ValToStr(EulerZYX(\X, wobj0.oframe.rot)) + "!";
+        SocketSend client_socket\Str:= "[" + ValToStr(EulerZYX(\X, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Y, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Z, curr_targ.rot)) + "]!";
         
     
         
@@ -310,10 +317,14 @@ MODULE tcp
     !Report the robots joint angles
     PROC report_joints()
         !Get the joint angles
-        VAR jointtarget joints;
+        VAR jointtarget joints;  
+        
         joints := CJointT();
         
         SocketSend client_socket\Str:= ValToStr(joints.robax) + "!";
+        
+        
+        
         
         
         
