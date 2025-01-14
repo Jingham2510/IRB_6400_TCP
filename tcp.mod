@@ -155,22 +155,27 @@ MODULE tcp
     PROC move_to(string target_pos)
         !decode the target pos into a robtarget variable
         VAR robtarget rob_trgt_pos;
-
         VAR bool ok;
+        !Get the current target
+        VAR robtarget curr_trgt;
+        curr_trgt := CRobT(\Tool:=tool0 \WObj:=wobj0);        
         
         !Should be able to convert to the robot target directly
-        ok:= StrToVal(target_pos,rob_trgt_pos);
-
-
+        ok:= StrToVal(target_pos,rob_trgt_pos.trans);
         
-        !Write out the robot target just to check
-        TPWrite ValToStr(rob_trgt_pos);
-
+        !Keep everything else the same
+        !NOTE: NEED TO UPDATE SO Z ANGLE IS ALWAYS 0
+        rob_trgt_pos.rot := curr_trgt.rot;        
+        rob_trgt_pos.extax := curr_trgt.extax;        
+        rob_trgt_pos.robconf := curr_trgt.robconf;
         
-        IF ok THEN
-                    
+        !TPWrite("CURR: " + ValToStr(curr_trgt.trans) + " " + ValToStr(curr_trgt.rot));
+        !TPWrite("NEW: " + ValToStr(rob_trgt_pos.trans) + " " + ValToStr(rob_trgt_pos.rot));
+
+
+        IF ok THEN                   
             !Move the robot to the target
-            MoveJ rob_trgt_pos, v1000, z20, tool0;
+            MoveJ rob_trgt_pos, v100, fine, tool0;
             SocketSend client_socket\Str:="MVTO OK" + "!";
         ENDIF
 
