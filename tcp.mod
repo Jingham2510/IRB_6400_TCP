@@ -8,7 +8,7 @@ MODULE tcp
     VAR string receive_string;
     VAR string client_ip;
     
-    VAR loaddata test_load :=[0.01,[0,0,0.001],[1,0,0,0],0,0,0];
+    VAR loaddata test_load :=[0.01,[0,0,20],[1,0,0,0],0,0,0];
     
     VAR fcforcevector test_force_vector;
 
@@ -266,10 +266,12 @@ MODULE tcp
         
         ENDWHILE        
         
-                
-        !Move the tool as described
-        MoveLSync RelTool( CRobT(\Tool:=tool0 \WObj:=wobj0), dX, dY, dZ), v100, fine, tool0, "report_pos_and_force";
         
+        !Move the tool as described
+        !MoveLSync RelTool( CRobT(\Tool:=tool0 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool0, "report_pos_and_force";
+        
+        MoveL  RelTool( CRobT(\Tool:=tool0 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool0;
+
         !SocketSend client_socket\Str:= "MVTL CMPL";
         
     ENDPROC
@@ -311,6 +313,7 @@ MODULE tcp
         test_force_vector := FCGetForce(\Tool:=tool0);
         
         SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
+        
     
     ENDPROC
     
