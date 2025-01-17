@@ -90,8 +90,8 @@ MODULE tcp
         req_len:=StrLen(cmd)-5;
         cmd_req:=StrPart(cmd,6,req_len);
 
-        !TPWrite "ID:"+cmd_ID;
-        !TPWrite "Request: "+cmd_req;
+        TPWrite "ID:"+cmd_ID;
+        TPWrite "Request: "+cmd_req;
 
         !Match case the currently programmed commands
         TEST cmd_ID
@@ -272,7 +272,7 @@ MODULE tcp
         
         MoveL  RelTool( CRobT(\Tool:=tool0 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool0;
 
-        !SocketSend client_socket\Str:= "MVTL CMPL";
+        SocketSend client_socket\Str:= "MVTL CMPL" + "!";
         
     ENDPROC
     
