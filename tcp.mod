@@ -90,8 +90,8 @@ MODULE tcp
         req_len:=StrLen(cmd)-5;
         cmd_req:=StrPart(cmd,6,req_len);
 
-        TPWrite "ID:"+cmd_ID;
-        TPWrite "Request: "+cmd_req;
+        !TPWrite "ID:"+cmd_ID;
+        !TPWrite "Request: "+cmd_req;
 
         !Match case the currently programmed commands
         TEST cmd_ID
@@ -114,9 +114,15 @@ MODULE tcp
         CASE "STJT":
             set_jnt cmd_req;
         
+        !Set the orientation of the TCP
+        CASE "STOR":
+            set_ori cmd_req;
+        
         !Move the tool relative to its current position
         CASE "MVTL":
             move_tool cmd_req;
+            
+        
         
         !Report the robots current position
         CASE "GTPS":
@@ -164,7 +170,7 @@ MODULE tcp
         ok:= StrToVal(target_pos,rob_trgt_pos.trans);
         
         !Keep everything else the same
-        !NOTE: NEED TO UPDATE SO Z ANGLE IS ALWAYS 0
+        !NOTE: NEED TO UPDATE SO Z ANGLE IS ALWAYS 0 ? - maybe
         rob_trgt_pos.rot := curr_trgt.rot;        
         rob_trgt_pos.extax := curr_trgt.extax;        
         rob_trgt_pos.robconf := curr_trgt.robconf;
@@ -192,12 +198,9 @@ MODULE tcp
         !Declare the joint target
         VAR jointtarget jnt_trgt;
         VAR bool ok;
-        
-        
-
+                
         !Convert the string into the joint targets
         ok := StrToVal(target_jnts, jnt_trgt);
-
         
         IF ok THEN
             
@@ -215,6 +218,42 @@ MODULE tcp
             
         ENDIF
 
+    ENDPROC
+    
+    !Set the orientation of the tool - leaving the xyz the same
+    PROC set_ori(string ori)
+        !setup the required variables
+        VAR robtarget rob_trgt;
+        VAR bool ok;
+        
+        !get the current target
+        VAR robtarget curr_trgt;
+        curr_trgt := CRobT(\Tool:=tool0 \WObj:=wobj0); 
+        
+        !Should be able to convert to the robot target directly
+        ok:= StrToVal(ori,rob_trgt.rot);
+        
+        !keep everything the same
+        rob_trgt.trans := curr_trgt.trans;
+        rob_trgt.robconf := curr_trgt.robconf;
+        rob_trgt.extax := curr_trgt.extax;
+        
+        
+        !if the orientation req is okay - move the robots
+        IF ok THEN                   
+            !Move the robot to the target
+            MoveJ rob_trgt, v100, fine, tool0;
+            SocketSend client_socket\Str:="STOR OK" + "!";
+        ENDIF
+
+        IF NOT ok THEN
+            !If something breaks
+            TPWrite "Invalid target ori";
+            SocketSend client_socket\Str:="INVALID ORI" + "!";
+        ENDIF
+        
+        
+        
     ENDPROC
     
     !move the tool relative to its current position
