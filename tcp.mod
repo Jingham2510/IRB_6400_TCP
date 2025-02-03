@@ -10,23 +10,24 @@ MODULE tcp
     
     
      !Tool that has its base frame rotated to match the base frame orientation
-     PERS tooldata tool1 := [TRUE, [[0, 0, 0], [0, 0.7071068, -0.7071068, 0]],
-                        [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0]];
+     !symmetrical so rotation of CoM doesnt matter
+     PERS tooldata rnd_eff := [TRUE, [[0, 0, 160], [0, 0.7071068, -0.7071068, 0]],
+                        [0.97284, [0, 0, 50],[1, 0, 0, 0], 0, 0, 0]];
     
     
-    VAR loaddata test_load :=[0.01,[0,0,20],[1,0,0,0],0,0,0];
+    VAR loaddata test_load :=[0.97284,[0,0,50],[1,0,0,0],0,0,0];
     
     VAR fcforcevector test_force_vector;
 
     PROC main()
         
+        
+         MoveL RelTool( CRobT(\Tool:=rnd_eff \WObj:=wobj0), 0, 0, 10), v100, fine, rnd_eff;
+         
         !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
-        !test_load := FCLoadId();
-                
-        !MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
-               
-        !MOVE HERE
-        !FCCalib test_load;         
+        test_load := FCLoadId();      
+                      
+        FCCalib test_load;         
 
         
         
@@ -164,7 +165,7 @@ MODULE tcp
         VAR bool ok;
         !Get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);        
+        curr_trgt := CRobT(\Tool:=rnd_eff \WObj:=wobj0);        
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(target_pos,rob_trgt_pos.trans);
@@ -181,7 +182,7 @@ MODULE tcp
 
         IF ok THEN                   
             !Move the robot to the target
-            MoveJ rob_trgt_pos, v100, fine, tool1;
+            MoveJ rob_trgt_pos, v100, fine, rnd_eff;
             SocketSend client_socket\Str:="MVTO OK" + "!";
         ENDIF
 
@@ -209,7 +210,7 @@ MODULE tcp
             
             TPWrite ValToStr(jnt_trgt);
             
-            MoveAbsJ jnt_trgt, v100, fine, tool1;
+            MoveAbsJ jnt_trgt, v100, fine, rnd_eff;
             
             !Let the client know the move happened
             SocketSend client_socket\Str:= "STJT CMPL" + "!";
@@ -274,9 +275,9 @@ MODULE tcp
         
         
         !Move the tool as described
-        !MoveLSync RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool1, "report_pos_and_force";
+        !MoveLSync RelTool( CRobT(\Tool:=rnd_eff \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, rnd_eff, "report_pos_and_force";
         
-        MoveL  RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ), v100, fine, tool1;
+        MoveL  RelTool( CRobT(\Tool:=rnd_eff \WObj:=wobj0), dX, dY, dZ), v100, fine, rnd_eff;
 
         SocketSend client_socket\Str:= "MVTL CMPL" + "!";
         
@@ -284,7 +285,7 @@ MODULE tcp
     
     !Sends the current position to the tcp socket
     PROC report_pos()        
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool1 \WObj:=wobj0)) + "!";  
+        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=rnd_eff \WObj:=wobj0)) + "!";  
     ENDPROC
     
     !Sends the current orientation to the tcp socket
@@ -292,7 +293,7 @@ MODULE tcp
         
         VAR robtarget curr_targ;
         
-        curr_targ := CRobT(\Tool:=tool1 \WObj:=wobj0);
+        curr_targ := CRobT(\Tool:=rnd_eff \WObj:=wobj0);
         
         !Send all of the euler angles
         SocketSend client_socket\Str:= "[" + ValToStr(EulerZYX(\X, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Y, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Z, curr_targ.rot)) + "]!";
@@ -305,7 +306,7 @@ MODULE tcp
     !Report the force being enacted on the robot
     PROC report_force()
     
-        test_force_vector := FCGetForce(\Tool:=tool1);
+        test_force_vector := FCGetForce(\Tool:=rnd_eff);
         SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
         
     ENDPROC
@@ -314,9 +315,9 @@ MODULE tcp
     !Sends the current position and force to the tcp socket 
     PROC report_pos_and_force()
         
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool1 \WObj:=wobj0)) + "!";
+        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=rnd_eff \WObj:=wobj0)) + "!";
         
-        test_force_vector := FCGetForce(\Tool:=tool1);
+        test_force_vector := FCGetForce(\Tool:=rnd_eff);
         
         SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
         
