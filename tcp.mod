@@ -10,7 +10,7 @@ MODULE tcp
     
     
      !Tool that has its base frame rotated to match the base frame orientation
-     PERS tooldata tool1 := [TRUE, [[0, 0, 0], [1, 0, 0, 0]],
+     PERS tooldata tool1 := [TRUE, [[0, 0, 0], [0, 0.7071068, -0.7071068, 0]],
                         [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0]];
     
     
