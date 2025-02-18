@@ -182,6 +182,14 @@ MODULE tcp
         CASE "TQAD":
             traj_add_pnt cmd_req;
             
+        !Start the trajectory queue
+        CASE "TJGO":
+            run_trajectory := TRUE;
+            
+        !Stop the trajectory queue
+        CASE "TJST":
+            run_trajectory := FALSE;
+            
             
             
         
@@ -260,7 +268,7 @@ MODULE tcp
         Incr head;
         
         !Check if the trajectory queue is empty and update the flags
-        IF(head > tail) THEN
+        IF(head = tail) THEN
             queue_end := TRUE;
             run_trajectory := FALSE;
         ENDIF
