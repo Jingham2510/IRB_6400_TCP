@@ -20,23 +20,35 @@ MODULE tcp
     
 
 
+            
+        
+     
+    !Initialise Trajectory queue
+    VAR robtarget traj_coord_queue{100000};    
+    
+    VAR num head := 1;
+    VAR num tail := 1;
+    
+    !Go/Pause Flag
+    VAR bool run_trajectory := FALSE;
+    !Empty Flag
+    VAR bool queue_end := TRUE;
+
+
     PROC main()      
+
+
         
         
-        !Get motor moving signal
-        if DOutput(ROB_STATIONARY) = 1 THEN 
-            TPWrite "NOT MOVING"; 
-        endif
         
-        
-        MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
+        !MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
                
         
         !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
-        test_load := FCLoadId();
+        !test_load := FCLoadId();
 
         !MOVE HERE
-        FCCalib test_load;         
+        !FCCalib test_load;         
 
         
         
@@ -50,6 +62,13 @@ MODULE tcp
 
         ! Waiting for a connection request
         WHILE TRUE DO
+            
+            !Check if the trajectory queue is finished
+            IF (run_trajectory and (not queue_end)) and (DOutput(ROB_STATIONARY) = 1) THEN
+                next_traj_pnt;
+            ENDIF
+            
+            
             !Recieve the string
             SocketReceive client_socket\Str:=receive_string;
             !Process the command
@@ -159,6 +178,10 @@ MODULE tcp
         CASE "MVST":
             SocketSend client_socket\Str:= ValToStr(DOutput(ROB_STATIONARY)) + "!";
             
+        !Add to the trajectory queue
+        CASE "TQAD":
+            traj_add_pnt cmd_req;
+            
             
             
         
@@ -171,6 +194,80 @@ MODULE tcp
 
     ENDPROC
 
+    
+    
+    
+    !Add a point to the trajectory
+    PROC traj_add_pnt(string add_traj_pos)
+        
+        !decode the target pos into a robtarget variable
+        VAR robtarget rob_trgt_pos;
+        VAR bool ok;
+        !Get the current target
+        VAR robtarget curr_trgt;
+        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);        
+        
+        !Should be able to convert to the robot target directly
+        ok:= StrToVal(add_traj_pos ,rob_trgt_pos.trans);
+        
+        !Keep everything else the same
+        !NOTE: NEED TO UPDATE SO Z ANGLE IS ALWAYS 0
+        rob_trgt_pos.rot := curr_trgt.rot;        
+        rob_trgt_pos.extax := curr_trgt.extax;        
+        rob_trgt_pos.robconf := curr_trgt.robconf;
+        
+  
+        !TPWrite("NEW: " + ValToStr(rob_trgt_pos.trans) + " " + ValToStr(rob_trgt_pos.rot));
+        
+        !If conversion okay
+        IF(ok) THEN
+            !add to the end of the queue
+            traj_coord_queue{tail} := rob_trgt_pos;
+            !Increment the tail
+            Incr tail;
+            !Change the queue end flag
+            queue_end := FALSE;
+
+        ENDIF
+        
+        IF NOT ok THEN
+            !If something breaks
+            TPWrite "Invalid target position";
+            SocketSend client_socket\Str:="INVALID POS" + "!";
+        ENDIF  
+        
+        
+        
+    ENDPROC
+    
+    
+    
+    !Move to the next point in the trajectory    
+    PROC next_traj_pnt()          
+        
+        !Access the first in the trajectory queue
+        VAR robtarget next_trg;
+        next_trg := traj_coord_queue{head};
+        
+        TpWrite "QUEUE RUN";
+        
+      
+        
+        !Set the robot to move to the desired point
+        MoveL \Conc, next_trg, v20, fine, tool1;
+        
+        !increment the head counter
+        Incr head;
+        
+        !Check if the trajectory queue is empty and update the flags
+        IF(head > tail) THEN
+            queue_end := TRUE;
+            run_trajectory := FALSE;
+        ENDIF
+        
+        
+    ENDPROC
+    
 
     !Moves the robot end-affector to a specified posiiton via robtarget
     PROC move_to(string target_pos)
