@@ -21,8 +21,6 @@ MODULE tcp
 
 
     PROC main()      
-
-
         
         
         !Get motor moving signal
@@ -31,14 +29,14 @@ MODULE tcp
         endif
         
         
-        !MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
+        MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
                
         
         !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
-        !test_load := FCLoadId();
+        test_load := FCLoadId();
 
         !MOVE HERE
-        !FCCalib test_load;         
+        FCCalib test_load;         
 
         
         
@@ -156,6 +154,10 @@ MODULE tcp
         !Report the robots joint angles (without external)
         CASE "GTJA":
             report_joints;
+            
+        !Report the moving state
+        CASE "MVST":
+            SocketSend client_socket\Str:= ValToStr(DOutput(ROB_STATIONARY)) + "!";
             
             
             
@@ -289,7 +291,7 @@ MODULE tcp
         !Move the tool as described
         !MoveLSync RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool1, "report_pos_and_force";
         
-        MoveL \Conc, RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ), v20, fine, tool1;
+        MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ), v20, fine, tool1;
         
         
            
