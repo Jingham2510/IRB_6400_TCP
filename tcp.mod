@@ -31,8 +31,13 @@ MODULE tcp
     
     !Go/Pause Flag
     VAR bool run_trajectory := FALSE;
+    
     !Empty Flag
-    VAR bool queue_end := TRUE;
+    VAR bool queue_end := TRUE;    
+    !Go msg workaround
+    VAR bool go_msg := FALSE;
+    
+    
 
 
     PROC main()      
@@ -48,8 +53,7 @@ MODULE tcp
         !test_load := FCLoadId();
 
         !MOVE HERE
-        !FCCalib test_load;         
-
+        !FCCalib test_load;       
         
         
         
@@ -67,8 +71,9 @@ MODULE tcp
             IF (run_trajectory and (not queue_end)) and (DOutput(ROB_STATIONARY) = 1) THEN
                 next_traj_pnt;
             ENDIF
-            
-            
+
+
+        
             !Recieve the string
             SocketReceive client_socket\Str:=receive_string;
             !Process the command
@@ -176,6 +181,7 @@ MODULE tcp
             
         !Report the moving state
         CASE "MVST":
+       
             SocketSend client_socket\Str:= ValToStr(DOutput(ROB_STATIONARY)) + "!";
             
         !Add to the trajectory queue
@@ -185,13 +191,16 @@ MODULE tcp
         !Start the trajectory queue
         CASE "TJGO":
             run_trajectory := TRUE;
+            go_msg := FALSE;
+
             
         !Stop the trajectory queue
         CASE "TJST":
             run_trajectory := FALSE;
             
-            
-            
+        !Reports whether the trajectory queue has reached the end
+        CASE "TJQE":        
+            SocketSend client_socket\Str:= ValToStr(queue_end) + "!";
         
         !if unprogrammed/unknown command is sent    
         DEFAULT:
@@ -213,7 +222,9 @@ MODULE tcp
         VAR bool ok;
         !Get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);        
+        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);    
+        
+        TpWrite ValToStr(add_traj_pos);
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(add_traj_pos ,rob_trgt_pos.trans);
@@ -233,8 +244,12 @@ MODULE tcp
             traj_coord_queue{tail} := rob_trgt_pos;
             !Increment the tail
             Incr tail;
+            
             !Change the queue end flag
             queue_end := FALSE;
+            
+            
+            SocketSend client_socket\Str:= "OK!";
 
         ENDIF
         
@@ -257,8 +272,7 @@ MODULE tcp
         VAR robtarget next_trg;
         next_trg := traj_coord_queue{head};
         
-        TpWrite "QUEUE RUN";
-        
+        TpWrite "GOTO: " + ValToStr(next_trg.trans);       
       
         
         !Set the robot to move to the desired point
@@ -273,7 +287,11 @@ MODULE tcp
             run_trajectory := FALSE;
         ENDIF
         
-        
+        IF(go_msg = FALSE) THEN
+            SocketSend client_socket\Str:="GOING!";
+            go_msg := TRUE;
+        ENDIF
+
     ENDPROC
     
 
@@ -302,7 +320,9 @@ MODULE tcp
         IF ok THEN                   
             !Move the robot to the target
             MoveJ rob_trgt_pos, v100, fine, tool1;
+
             SocketSend client_socket\Str:="MVTO OK" + "!";
+            
         ENDIF
 
         IF NOT ok THEN
