@@ -33,7 +33,7 @@ MODULE tcp
     VAR bool run_trajectory := FALSE;
     
     !traj done and still count
-    VAR bool traj_done := TRUE;
+    VAR bool traj_done := FALSE;
     VAR num still_cnt := 0;
     
     
@@ -47,7 +47,7 @@ MODULE tcp
 
     PROC main()      
 
-
+        
         
         
         
@@ -81,11 +81,11 @@ MODULE tcp
             
             
             
-            !Check if the trajectory queue is finished
-            IF (run_trajectory and (not queue_end)) and (DOutput(ROB_STATIONARY) = 1) THEN
+            !Check if the trajectory queue is finished - THE ISSUE LIES HERE - 
+            IF (run_trajectory and (not queue_end)) and (still_cnt > 8 OR (NOT go_msg)) THEN
                 next_traj_pnt;
                 
-            ELSEIF (queue_end AND still_cnt > 15) THEN
+            ELSEIF (queue_end AND still_cnt > 20) THEN
                 traj_done := TRUE;
                 
             ENDIF
@@ -294,7 +294,7 @@ MODULE tcp
       
         
         !Set the robot to move to the desired point
-        MoveL \Conc, next_trg, v20, fine, tool1;
+        MoveL \Conc, next_trg, v5, fine, tool1;
         
         !increment the head counter
         Incr head;
@@ -304,6 +304,7 @@ MODULE tcp
             queue_end := TRUE;
             run_trajectory := FALSE;
         ENDIF
+   
         
         IF(go_msg = FALSE) THEN
             SocketSend client_socket\Str:="GOING!";
