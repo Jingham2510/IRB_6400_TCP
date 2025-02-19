@@ -33,7 +33,6 @@ MODULE tcp
     VAR bool run_trajectory := FALSE;
     
     !traj done and still count
-    VAR signaldo start_move := 0;
     VAR bool traj_done := FALSE;
     VAR num still_cnt := 0;
     
@@ -48,8 +47,7 @@ MODULE tcp
 
     PROC main()      
 
-        
-        
+        SetDo move_started, 0;
         
         
         !MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
@@ -80,10 +78,8 @@ MODULE tcp
                 still_cnt := 0;
             ENDIF
             
-            
-            
-            !Check if the trajectory queue is finished - THE ISSUE LIES HERE - 
-            IF (run_trajectory and (not queue_end)) and (still_cnt > 15 OR (NOT go_msg)) THEN
+            !Check if the trajectory queue is finished
+            IF (run_trajectory and (not queue_end)) and (DOutput(move_started) = 1) THEN
                 next_traj_pnt;
                 
             ELSEIF (queue_end AND still_cnt > 20) THEN
@@ -213,6 +209,7 @@ MODULE tcp
             go_msg := FALSE;
             SocketSend client_socket\Str:="GOING!";
             go_msg := TRUE;
+            SetDo move_started, 1;
 
             
         !Stop the trajectory queue
@@ -300,14 +297,12 @@ MODULE tcp
         VAR robtarget next_trg;
         next_trg := traj_coord_queue{head};
         
-        !TpWrite "GOTO: " + ValToStr(next_trg.trans);   
-        
-           
         !Reset the start_move flag
-        start_move := 0;
+        SetDO move_started, 0;
+
       
         !Setup the trigger
-        TriggIO set_move_flag, 0, \start, \Dop:= start_move, 1;
+        TriggIO set_move_flag, 0, \start, \Dop:= move_started, 1;
         
         !Set the robot to move to the desired point
         TriggL \Conc, next_trg, v5, set_move_flag ,fine, tool1;
