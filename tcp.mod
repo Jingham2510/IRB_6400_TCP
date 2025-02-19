@@ -85,7 +85,7 @@ MODULE tcp
             IF (run_trajectory and (not queue_end)) and (DOutput(ROB_STATIONARY) = 1) THEN
                 next_traj_pnt;
                 
-            ELSEIF (queue_end AND still_cnt = 15) THEN
+            ELSEIF (queue_end AND still_cnt > 15) THEN
                 traj_done := TRUE;
                 
             ENDIF
@@ -242,7 +242,7 @@ MODULE tcp
         VAR robtarget curr_trgt;
         curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);    
         
-        TpWrite ValToStr(add_traj_pos);
+        !TpWrite ValToStr(add_traj_pos);
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(add_traj_pos ,rob_trgt_pos.trans);
