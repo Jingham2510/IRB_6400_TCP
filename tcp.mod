@@ -32,6 +32,11 @@ MODULE tcp
     !Go/Pause Flag
     VAR bool run_trajectory := FALSE;
     
+    !traj done and still count
+    VAR bool traj_done := TRUE;
+    VAR num still_cnt := 0;
+    
+    
     !Empty Flag
     VAR bool queue_end := TRUE;    
     !Go msg workaround
@@ -67,9 +72,22 @@ MODULE tcp
         ! Waiting for a connection request
         WHILE TRUE DO
             
+            
+            IF (DOutput(ROB_STATIONARY) = 1) THEN
+                Incr still_cnt;
+            ELSE
+                still_cnt := 0;
+            ENDIF
+            
+            
+            
             !Check if the trajectory queue is finished
             IF (run_trajectory and (not queue_end)) and (DOutput(ROB_STATIONARY) = 1) THEN
                 next_traj_pnt;
+                
+            ELSEIF (queue_end AND still_cnt = 15) THEN
+                traj_done := TRUE;
+                
             ENDIF
 
 
@@ -199,8 +217,8 @@ MODULE tcp
             run_trajectory := FALSE;
             
         !Reports whether the trajectory queue has reached the end
-        CASE "TJQE":        
-            SocketSend client_socket\Str:= ValToStr(queue_end) + "!";
+        CASE "TJDN":        
+            SocketSend client_socket\Str:= ValToStr(traj_done) + "!";
         
         !if unprogrammed/unknown command is sent    
         DEFAULT:
@@ -272,7 +290,7 @@ MODULE tcp
         VAR robtarget next_trg;
         next_trg := traj_coord_queue{head};
         
-        TpWrite "GOTO: " + ValToStr(next_trg.trans);       
+        !TpWrite "GOTO: " + ValToStr(next_trg.trans);       
       
         
         !Set the robot to move to the desired point
