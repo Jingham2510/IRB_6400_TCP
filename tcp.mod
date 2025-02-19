@@ -33,6 +33,7 @@ MODULE tcp
     VAR bool run_trajectory := FALSE;
     
     !traj done and still count
+    VAR signaldo start_move := 0;
     VAR bool traj_done := FALSE;
     VAR num still_cnt := 0;
     
@@ -82,7 +83,7 @@ MODULE tcp
             
             
             !Check if the trajectory queue is finished - THE ISSUE LIES HERE - 
-            IF (run_trajectory and (not queue_end)) and (still_cnt > 8 OR (NOT go_msg)) THEN
+            IF (run_trajectory and (not queue_end)) and (still_cnt > 15 OR (NOT go_msg)) THEN
                 next_traj_pnt;
                 
             ELSEIF (queue_end AND still_cnt > 20) THEN
@@ -210,6 +211,8 @@ MODULE tcp
         CASE "TJGO":
             run_trajectory := TRUE;
             go_msg := FALSE;
+            SocketSend client_socket\Str:="GOING!";
+            go_msg := TRUE;
 
             
         !Stop the trajectory queue
@@ -235,12 +238,14 @@ MODULE tcp
     !Add a point to the trajectory
     PROC traj_add_pnt(string add_traj_pos)
         
+    
         !decode the target pos into a robtarget variable
         VAR robtarget rob_trgt_pos;
         VAR bool ok;
         !Get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);    
+        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0); 
+     
         
         !TpWrite ValToStr(add_traj_pos);
         
@@ -286,15 +291,28 @@ MODULE tcp
     !Move to the next point in the trajectory    
     PROC next_traj_pnt()          
         
+        !Setup the trigger for the trajectory point
+        VAR triggdata set_move_flag;
+        
+        
+        
         !Access the first in the trajectory queue
         VAR robtarget next_trg;
         next_trg := traj_coord_queue{head};
         
-        !TpWrite "GOTO: " + ValToStr(next_trg.trans);       
+        !TpWrite "GOTO: " + ValToStr(next_trg.trans);   
+        
+           
+        !Reset the start_move flag
+        start_move := 0;
       
+        !Setup the trigger
+        TriggIO set_move_flag, 0, \start, \Dop:= start_move, 1;
         
         !Set the robot to move to the desired point
-        MoveL \Conc, next_trg, v5, fine, tool1;
+        TriggL \Conc, next_trg, v5, set_move_flag ,fine, tool1;
+        
+
         
         !increment the head counter
         Incr head;
@@ -306,10 +324,7 @@ MODULE tcp
         ENDIF
    
         
-        IF(go_msg = FALSE) THEN
-            SocketSend client_socket\Str:="GOING!";
-            go_msg := TRUE;
-        ENDIF
+    
 
     ENDPROC
     
