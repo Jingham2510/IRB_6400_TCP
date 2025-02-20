@@ -31,6 +31,7 @@ MODULE tcp
     
     !Go/Pause Flag
     VAR bool run_trajectory := FALSE;
+    VAR num conc_count := 0;
     
     !traj done and still count
     VAR bool traj_done := FALSE;
@@ -313,14 +314,24 @@ MODULE tcp
         
               
         !Setup the trigger
-        TriggIO set_move_flag, 0 \start,\Dop:= move_started, 1;
+        TriggIO set_move_flag, 0,\Dop:= move_started, 1;
         
-        !Set the robot to move to the desired point
-        TriggL \Conc, next_trg, v5, set_move_flag, fine , tool1;
+        IF (conc_count < 5) THEN
+            
+            !Set the robot to move to the desired point
+            TriggL \Conc, next_trg, v5, set_move_flag, fine , tool1;
+            
+            Incr conc_count;
+            
+        ELSE
+            !Set the robot to move to the desired point
+            TriggL next_trg, v5, set_move_flag, fine , tool1;
+            
+            conc_count := 0;
         
-     
-
-
+        ENDIF
+        
+        
         
         !increment the head counter
         Incr head;
