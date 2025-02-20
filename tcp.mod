@@ -41,13 +41,17 @@ MODULE tcp
     VAR bool queue_end := TRUE;    
     !Go msg workaround
     VAR bool go_msg := FALSE;
-    
-    
 
 
     PROC main()      
+        
+
+
 
         SetDo move_started, 0;
+        
+        
+        
         
         
         !MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
@@ -79,7 +83,8 @@ MODULE tcp
             ENDIF
             
             !Check if the trajectory queue is finished
-            IF (run_trajectory and (not queue_end)) and (DOutput(move_started) = 1) THEN
+            IF (run_trajectory and (not queue_end)) and ((DOutput(move_started) = 1) and (DOutput(ROB_STATIONARY) = 1)) THEN
+                TpWrite "Load Next Point";
                 next_traj_pnt;
                 
             ELSEIF (queue_end AND still_cnt > 20) THEN
@@ -95,9 +100,13 @@ MODULE tcp
             cmd_handler receive_string;
 
         ENDWHILE
-    ERROR
-        RETRY;
         
+    
+
+    ERROR
+  
+            RETRY;
+
         
     UNDO
         !Just incase something breaks - panic and close the sockets
@@ -288,10 +297,10 @@ MODULE tcp
     !Move to the next point in the trajectory    
     PROC next_traj_pnt()          
         
+            
+        
         !Setup the trigger for the trajectory point
         VAR triggdata set_move_flag;
-        
-        
         
         !Access the first in the trajectory queue
         VAR robtarget next_trg;
@@ -299,14 +308,18 @@ MODULE tcp
         
         !Reset the start_move flag
         SetDO move_started, 0;
-
-      
+        
+        TPWrite "Signal Low";
+        
+              
         !Setup the trigger
-        TriggIO set_move_flag, 0, \start, \Dop:= move_started, 1;
+        TriggIO set_move_flag, 0 \start,\Dop:= move_started, 1;
         
         !Set the robot to move to the desired point
-        TriggL \Conc, next_trg, v5, set_move_flag ,fine, tool1;
+        TriggL \Conc, next_trg, v5, set_move_flag, fine , tool1;
         
+     
+
 
         
         !increment the head counter
@@ -445,7 +458,7 @@ MODULE tcp
         !Move the tool as described
         !MoveLSync RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool1, "report_pos_and_force";
         
-        MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ), v20, fine, tool1;
+        MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ), v20, flyby, tool1;
         
         
            
