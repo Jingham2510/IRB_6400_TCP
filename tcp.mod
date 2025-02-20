@@ -469,7 +469,7 @@ MODULE tcp
         !Move the tool as described
         !MoveLSync RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool1, "report_pos_and_force";
         
-        MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ), v20, flyby, tool1;
+        MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ), v20, fine, tool1;
         
         
            
