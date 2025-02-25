@@ -51,18 +51,20 @@ MODULE tcp
 
         SetDo move_started, 0;
         
+        IF not ROBOS() THEN        
+            MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
+                   
+            
+            !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
+            test_load := FCLoadId();
+    
+            !MOVE HERE
+            FCCalib test_load;         
         
+        ENDIF
+                
         
-        
-        
-        !MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
-               
-        
-        !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
-        !test_load := FCLoadId();
-
-        !MOVE HERE
-        !FCCalib test_load;       
+ 
         
         
         
