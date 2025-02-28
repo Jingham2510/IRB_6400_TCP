@@ -51,7 +51,9 @@ MODULE tcp
 
         SetDo move_started, 0;
         
-        IF not ROBOS() THEN        
+        !Checks if force calibraiton is required or not
+        !Not required for the virtual controller
+        IF ROBOS() THEN        
             MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
                    
             
@@ -211,9 +213,14 @@ MODULE tcp
        
             SocketSend client_socket\Str:= ValToStr(DOutput(ROB_STATIONARY)) + "!";
             
-        !Add to the trajectory queue
+        !Add a tranlation to the trajectory queue
         CASE "TQAD":
             traj_add_pnt cmd_req;
+        
+        !Add a rotation to the trajectory queue
+        CASE "RQAD":
+            traj_add_rot cmd_req;
+            
             
         !Start the trajectory queue
         CASE "TJGO":
@@ -295,6 +302,54 @@ MODULE tcp
         
     ENDPROC
     
+    
+     !Add a point to the trajectory
+    PROC traj_add_rot(string add_traj_ori)
+        
+    
+        !decode the target pos into a robtarget variable
+        VAR robtarget rob_trgt_ori;
+        VAR orient targ_ori;
+        VAR bool ok;
+        !Get the current target
+        VAR robtarget curr_trgt;
+        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0); 
+        
+        !Should be able to convert to the robot target directly
+        ok:= StrToVal(add_traj_ori, rob_trgt_ori.rot);
+        
+        !Keep everything else the same
+        !NOTE: NEED TO UPDATE SO Z ANGLE IS ALWAYS 0
+        rob_trgt_ori.trans := curr_trgt.trans;        
+        rob_trgt_ori.extax := curr_trgt.extax;        
+        rob_trgt_ori.robconf := curr_trgt.robconf;
+        
+  
+        !TPWrite("NEW: " + ValToStr(rob_trgt_pos.trans) + " " + ValToStr(rob_trgt_pos.rot));
+        
+        !If conversion okay
+        IF(ok) THEN
+            !add to the end of the queue
+            traj_coord_queue{tail} := rob_trgt_ori;
+            !Increment the tail
+            Incr tail;
+            
+            !Change the queue end flag
+            queue_end := FALSE;
+            
+            SocketSend client_socket\Str:= "OK!";
+
+        ENDIF
+        
+        IF NOT ok THEN
+            !If something breaks
+            TPWrite "Invalid target position";
+            SocketSend client_socket\Str:="INVALID POS" + "!";
+        ENDIF  
+        
+        
+        
+    ENDPROC
     
     
     !Move to the next point in the trajectory    
