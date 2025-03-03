@@ -29,6 +29,10 @@ MODULE tcp
     VAR num head := 1;
     VAR num tail := 1;
     
+    !Tracker of most recent trajectory pnt
+    VAR num lst_trans_pnt := -1;
+    VAR num lst_rot_pnt := -1;
+    
     !Go/Pause Flag
     VAR bool run_trajectory := FALSE;
     VAR num conc_count := 0;
@@ -260,7 +264,16 @@ MODULE tcp
         VAR bool ok;
         !Get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0); 
+        
+        IF(lst_rot_pnt = -1) THEN
+            curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);
+            
+        ELSE
+            curr_trgt := traj_coord_queue{lst_rot_pnt};
+            
+        ENDIF
+        
+         
      
         
         !TpWrite ValToStr(add_traj_pos);
@@ -281,6 +294,9 @@ MODULE tcp
         IF(ok) THEN
             !add to the end of the queue
             traj_coord_queue{tail} := rob_trgt_pos;
+            
+            lst_trans_pnt := tail;
+            
             !Increment the tail
             Incr tail;
             
@@ -311,9 +327,15 @@ MODULE tcp
         VAR robtarget rob_trgt_ori;
         VAR orient targ_ori;
         VAR bool ok;
-        !Get the current target
+        !Get the most recent target from the queue
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0); 
+        IF(lst_trans_pnt = -1) THEN
+            curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);
+            
+        ELSE
+            curr_trgt := traj_coord_queue{lst_trans_pnt};
+            
+        ENDIF
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(add_traj_ori, rob_trgt_ori.rot);
@@ -325,12 +347,14 @@ MODULE tcp
         rob_trgt_ori.robconf := curr_trgt.robconf;
         
   
-        !TPWrite("NEW: " + ValToStr(rob_trgt_pos.trans) + " " + ValToStr(rob_trgt_pos.rot));
-        
+
         !If conversion okay
         IF(ok) THEN
             !add to the end of the queue
             traj_coord_queue{tail} := rob_trgt_ori;
+            
+            lst_rot_pnt := tail;
+            
             !Increment the tail
             Incr tail;
             
