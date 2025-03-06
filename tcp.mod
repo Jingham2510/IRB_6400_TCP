@@ -9,14 +9,15 @@ MODULE tcp
     VAR string client_ip;
     
     
-     !Tool that has its base frame rotated to match the base frame orientation
-     PERS tooldata tool1 := [TRUE, [[0, 0, 0], [0, 0.7071068, -0.7071068, 0]],
-                        [0.97284, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0]];
+     !Spherical end effector tool
+     PERS tooldata sph_end_eff := [TRUE, [[0, 0, 100], [1, 0, 0, 0]],
+                        [0.97311, [0, 0, 42.664],[1, 0, 0, 0], 0, 0, 0]];
     
     
-    VAR loaddata test_load :=[0.01,[0,0,20],[1,0,0,0],0,0,0];
+    VAR loaddata test_load := load0;
     
     VAR fcforcevector test_force_vector;
+    
     
 
 
@@ -58,7 +59,7 @@ MODULE tcp
         !Checks if force calibraiton is required or not
         !Not required for the virtual controller
         IF ROBOS() THEN        
-            MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), 0, 0, 10), v100, fine, tool1;
+            MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, 10), v100, fine, sph_end_eff;
                    
             
             !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
@@ -69,7 +70,7 @@ MODULE tcp
         
         ENDIF
                 
-        
+
  
         
         
@@ -84,6 +85,7 @@ MODULE tcp
         ! Waiting for a connection request
         WHILE TRUE DO
             
+            !TpWrite ValToStr(GetMotorTorque(1));
             
             IF (DOutput(ROB_STATIONARY) = 1) THEN
                 Incr still_cnt;
@@ -266,7 +268,7 @@ MODULE tcp
         VAR robtarget curr_trgt;
         
         IF(lst_rot_pnt = -1) THEN
-            curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);
+            curr_trgt := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);
             
         ELSE
             curr_trgt := traj_coord_queue{lst_rot_pnt};
@@ -330,7 +332,7 @@ MODULE tcp
         !Get the most recent target from the queue
         VAR robtarget curr_trgt;
         IF(lst_trans_pnt = -1) THEN
-            curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);
+            curr_trgt := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);
             
         ELSE
             curr_trgt := traj_coord_queue{lst_trans_pnt};
@@ -400,13 +402,13 @@ MODULE tcp
         IF (conc_count < 5) THEN
             
             !Set the robot to move to the desired point
-            TriggL \Conc, next_trg, v5, set_move_flag, fine , tool1;
+            TriggL \Conc, next_trg, v5, set_move_flag, fine , sph_end_eff;
             
             Incr conc_count;
             
         ELSE
             !Set the robot to move to the desired point
-            TriggL next_trg, v5, set_move_flag, fine , tool1;
+            TriggL next_trg, v5, set_move_flag, fine , sph_end_eff;
             
             conc_count := 0;
         
@@ -436,7 +438,7 @@ MODULE tcp
         VAR bool ok;
         !Get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=tool1 \WObj:=wobj0);        
+        curr_trgt := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);        
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(target_pos,rob_trgt_pos.trans);
@@ -453,7 +455,7 @@ MODULE tcp
 
         IF ok THEN                   
             !Move the robot to the target
-            MoveJ rob_trgt_pos, v100, fine, tool1;
+            MoveJ rob_trgt_pos, v100, fine, sph_end_eff;
 
             SocketSend client_socket\Str:="MVTO OK" + "!";
             
@@ -483,7 +485,7 @@ MODULE tcp
             
             TPWrite ValToStr(jnt_trgt);
             
-            MoveAbsJ jnt_trgt, v100, fine, tool1;
+            MoveAbsJ jnt_trgt, v100, fine, sph_end_eff;
             
             !Let the client know the move happened
             SocketSend client_socket\Str:= "STJT CMPL" + "!";
@@ -550,7 +552,7 @@ MODULE tcp
         !Move the tool as described
         !MoveLSync RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool1, "report_pos_and_force";
         
-        MoveL RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ), v20, fine, tool1;
+        MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), v20, fine, sph_end_eff;
         
         
            
@@ -574,7 +576,7 @@ MODULE tcp
         
         VAR robtarget curr_targ;
         
-        curr_targ := CRobT(\Tool:=tool1 \WObj:=wobj0);
+        curr_targ := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);
         
         !Send all of the euler angles
         SocketSend client_socket\Str:= "[" + ValToStr(EulerZYX(\X, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Y, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Z, curr_targ.rot)) + "]!";
@@ -587,7 +589,7 @@ MODULE tcp
     !Report the force being enacted on the robot
     PROC report_force()
     
-        test_force_vector := FCGetForce(\Tool:=tool1);
+        test_force_vector := FCGetForce(\Tool:=sph_end_eff);
         SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
         
     ENDPROC
@@ -598,7 +600,7 @@ MODULE tcp
         
         SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool1 \WObj:=wobj0)) + "!";
         
-        test_force_vector := FCGetForce(\Tool:=tool1);
+        test_force_vector := FCGetForce(\Tool:=sph_end_eff);
         
         SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
         
