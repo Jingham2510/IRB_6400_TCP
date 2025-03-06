@@ -14,7 +14,7 @@ MODULE tcp
                         [0.97311, [0, 0, 42.664],[1, 0, 0, 0], 0, 0, 0]];
     
     
-    VAR loaddata test_load := load0;
+    VAR loaddata test_load := [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0];
     
     VAR fcforcevector test_force_vector;
     
@@ -58,12 +58,12 @@ MODULE tcp
         
         !Checks if force calibraiton is required or not
         !Not required for the virtual controller
-        IF ROBOS() THEN        
-            MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, 10), v100, fine, sph_end_eff;
-                   
-            
+        IF ROBOS() THEN                
+     
             !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
             test_load := FCLoadId();
+            
+            MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -10), v100, fine, sph_end_eff;
     
             !MOVE HERE
             FCCalib test_load;         
@@ -568,7 +568,7 @@ MODULE tcp
     
     !Sends the current position to the tcp socket
     PROC report_pos()        
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool1 \WObj:=wobj0)) + "!";  
+        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)) + "!";  
     ENDPROC
     
     !Sends the current orientation to the tcp socket
@@ -589,7 +589,7 @@ MODULE tcp
     !Report the force being enacted on the robot
     PROC report_force()
     
-        test_force_vector := FCGetForce(\Tool:=sph_end_eff);
+        test_force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
         SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
         
     ENDPROC
@@ -598,7 +598,7 @@ MODULE tcp
     !Sends the current position and force to the tcp socket 
     PROC report_pos_and_force()
         
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=tool1 \WObj:=wobj0)) + "!";
+        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)) + "!";
         
         test_force_vector := FCGetForce(\Tool:=sph_end_eff);
         
