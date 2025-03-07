@@ -11,7 +11,7 @@ MODULE tcp
     
      !Spherical end effector tool
      PERS tooldata sph_end_eff := [TRUE, [[0, 0, 100], [1, 0, 0, 0]],
-                        [0.97311, [0, 0, 42.664],[1, 0, 0, 0], 0, 0, 0]];
+                        [1.0687, [0, 0, 42.664],[1, 0, 0, 0], 0, 0, 0]];
     
     
     VAR loaddata test_load := [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0];
