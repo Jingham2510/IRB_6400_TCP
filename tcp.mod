@@ -85,7 +85,7 @@ MODULE tcp
         ! Waiting for a connection request
         WHILE TRUE DO
             
-            !TpWrite ValToStr(GetMotorTorque(1));
+
             
             IF (DOutput(ROB_STATIONARY) = 1) THEN
                 Incr still_cnt;
@@ -102,18 +102,13 @@ MODULE tcp
                 traj_done := TRUE;
                 
             ENDIF
-
-
-        
+            
             !Recieve the string
             SocketReceive client_socket\Str:=receive_string;
             !Process the command
             cmd_handler receive_string;
 
         ENDWHILE
-        
-    
-
     ERROR
   
             RETRY;
@@ -244,6 +239,12 @@ MODULE tcp
         !Reports whether the trajectory queue has reached the end
         CASE "TJDN":        
             SocketSend client_socket\Str:= ValToStr(traj_done) + "!";
+            
+        
+        !Reports the Torque of every joint
+        CASE "GTTQ":
+            report_torque;
+        
         
         !if unprogrammed/unknown command is sent    
         DEFAULT:
@@ -274,9 +275,6 @@ MODULE tcp
             curr_trgt := traj_coord_queue{lst_rot_pnt};
             
         ENDIF
-        
-         
-     
         
         !TpWrite ValToStr(add_traj_pos);
         
@@ -589,8 +587,16 @@ MODULE tcp
     !Report the force being enacted on the robot
     PROC report_force()
     
-        test_force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
-        SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
+        IF ROBOS() THEN        
+            test_force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
+            SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
+            
+        ELSE
+            SocketSend client_socket\Str:= "{-1,-1,-1,-1,-1,-1}!";
+        
+        ENDIF
+        
+        
         
     ENDPROC
     
@@ -621,9 +627,21 @@ MODULE tcp
         
         SocketSend client_socket\Str:= ValToStr(joints.robax) + "!";
         
+    ENDPROC
+    
+    
+    !Reports the robots measured torques
+    PROC report_torque()
         
+        !TpWrite ValToStr(GetMotorTorque(1));
         
-        
+        !Send the torques of each joint in a comma seperated format
+        SocketSend client_socket\Str:= "{" + ValToStr(GetMotorTorque(1)) + "," 
+                                            + ValToStr(GetMotorTorque(2)) + ","
+                                            + ValToStr(GetMotorTorque(3)) + ","
+                                            + ValToStr(GetMotorTorque(4)) + ","
+                                            + ValToStr(GetMotorTorque(5)) + ","
+                                            + ValToStr(GetMotorTorque(6)) + "}!";
         
         
     ENDPROC
