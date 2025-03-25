@@ -47,6 +47,10 @@ MODULE tcp
     VAR bool queue_end := TRUE;    
     !Go msg workaround
     VAR bool go_msg := FALSE;
+    
+    !ROBOT VARIABLES
+    VAR num des_speed_num := 50;
+    VAR speeddata des_speed := [50, 500, 5000, 1000];
 
 
     PROC main()      
@@ -184,6 +188,10 @@ MODULE tcp
         !Set the joints specifically        
         CASE "STJT":
             set_jnt cmd_req;
+            
+        !Set the speed of the robot
+        CASE "STSP":
+            set_speed cmd_req;
         
         !Move the tool relative to its current position
         CASE "MVTL":
@@ -400,13 +408,13 @@ MODULE tcp
         IF (conc_count < 5) THEN
             
             !Set the robot to move to the desired point
-            TriggL \Conc, next_trg, v5, set_move_flag, fine , sph_end_eff;
+            TriggL \Conc, next_trg, des_speed, set_move_flag, fine , sph_end_eff;
             
             Incr conc_count;
             
         ELSE
             !Set the robot to move to the desired point
-            TriggL next_trg, v5, set_move_flag, fine , sph_end_eff;
+            TriggL next_trg, des_speed, set_move_flag, fine , sph_end_eff;
             
             conc_count := 0;
         
@@ -453,7 +461,7 @@ MODULE tcp
 
         IF ok THEN                   
             !Move the robot to the target
-            MoveJ rob_trgt_pos, v100, fine, sph_end_eff;
+            MoveJ rob_trgt_pos, des_speed, fine, sph_end_eff;
 
             SocketSend client_socket\Str:="MVTO OK" + "!";
             
@@ -483,7 +491,7 @@ MODULE tcp
             
             TPWrite ValToStr(jnt_trgt);
             
-            MoveAbsJ jnt_trgt, v100, fine, sph_end_eff;
+            MoveAbsJ jnt_trgt, des_speed, fine, sph_end_eff;
             
             !Let the client know the move happened
             SocketSend client_socket\Str:= "STJT CMPL" + "!";
@@ -495,6 +503,18 @@ MODULE tcp
             
         ENDIF
 
+    ENDPROC
+    
+    PROC set_speed(string speed)
+        
+        VAR bool ok;
+        
+        !Convert the speed to the desired value
+        ok := StrtoVal(speed, des_speed);
+        des_speed := [des_speed_num, 500, 5000, 1000];
+        
+        SocketSend client_socket\Str:= "SPEED CHANGED";
+        
     ENDPROC
     
     !move the tool relative to its current position
@@ -550,7 +570,7 @@ MODULE tcp
         !Move the tool as described
         !MoveLSync RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool1, "report_pos_and_force";
         
-        MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), v20, fine, sph_end_eff;
+        MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), des_speed, fine, sph_end_eff;
         
         
            
