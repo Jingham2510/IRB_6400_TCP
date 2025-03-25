@@ -510,10 +510,10 @@ MODULE tcp
         VAR bool ok;
         
         !Convert the speed to the desired value
-        ok := StrtoVal(speed, des_speed);
+        ok := StrtoVal(speed, des_speed_num);
         des_speed := [des_speed_num, 500, 5000, 1000];
         
-        SocketSend client_socket\Str:= "SPEED CHANGED";
+        SocketSend client_socket\Str:= "SPEED CHANGED!";
         
     ENDPROC
     
