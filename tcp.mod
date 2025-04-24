@@ -49,16 +49,22 @@ MODULE tcp
     VAR bool go_msg := FALSE;
     
     !ROBOT VARIABLES
-    VAR num des_speed_num := 50;
-    VAR speeddata des_speed := [50, 500, 5000, 1000];
+    VAR num des_speed_num := 10;
+    VAR speeddata des_speed := [10, 500, 5000, 1000];
 
 
     PROC main()      
         
 
 
-
-        SetDo move_started, 0;
+        !ensure queue variables are correct
+        !You dont need to empty the queue because the head and tail pointers wont point to the erroneous data
+        SetDo move_started, 0;        
+        run_trajectory := FALSE;
+        still_cnt := 0;
+        conc_count := 0;
+        head := 1;
+        tail := 1;
         
         !Checks if force calibraiton is required or not
         !Not required for the virtual controller
