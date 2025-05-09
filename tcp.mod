@@ -21,8 +21,8 @@ MODULE tcp
     
 
 
-            
-        
+    !If force control has been calibrated
+    VAR bool fc_cal := FALSE;
      
     !Initialise Trajectory queue
     VAR robtarget traj_coord_queue{100000};    
@@ -49,26 +49,20 @@ MODULE tcp
     VAR bool go_msg := FALSE;
     
     !ROBOT VARIABLES
-    VAR num des_speed_num := 10;
-    VAR speeddata des_speed := [10, 500, 5000, 1000];
+    VAR num des_speed_num := 50;
+    VAR speeddata des_speed := [50, 500, 5000, 1000];
 
 
     PROC main()      
         
 
 
-        !ensure queue variables are correct
-        !You dont need to empty the queue because the head and tail pointers wont point to the erroneous data
-        SetDo move_started, 0;        
-        run_trajectory := FALSE;
-        still_cnt := 0;
-        conc_count := 0;
-        head := 1;
-        tail := 1;
+
+        SetDo move_started, 0;
         
         !Checks if force calibraiton is required or not
         !Not required for the virtual controller
-        IF ROBOS() THEN                
+        IF ROBOS() AND (NOT fc_cal) THEN                
      
             !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
             test_load := FCLoadId();
@@ -76,13 +70,15 @@ MODULE tcp
             MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -10), v100, fine, sph_end_eff;
     
             !MOVE HERE
-            FCCalib test_load;         
+            FCCalib test_load;      
+            
+            fc_cal := TRUE;
         
         ENDIF
                 
 
- 
-        
+        !Goto for if the socket closes
+        start_no_cali:
         
         
         !Open the local socket
@@ -119,9 +115,22 @@ MODULE tcp
             cmd_handler receive_string;
 
         ENDWHILE
-    ERROR
+    
+        ERROR
+            !If the socket is closed remotely - send pp back to main - behaviour becomes undefined but may be able to retain some semblance of control
+           IF ERRNO = ERR_SOCK_CLOSED THEN
+           
+                !! really feels like cheating! and itll just go down and down the main loop but...
+                close_sockets;
+                main;
+               
+                !GOTO start_no_cali;
+           
+           ENDIF
+    
+
+
   
-            RETRY;
 
         
     UNDO
@@ -249,6 +258,7 @@ MODULE tcp
         !Stop the trajectory queue
         CASE "TJST":
             run_trajectory := FALSE;
+            SocketSend client_socket\Str:="STOPPING!";
             
         !Reports whether the trajectory queue has reached the end
         CASE "TJDN":        
@@ -487,8 +497,9 @@ MODULE tcp
         VAR jointtarget jnt_trgt;
         VAR bool ok;
         
-        
+        TpWrite(ValToStr(target_jnts));
 
+        
         !Convert the string into the joint targets
         ok := StrToVal(target_jnts, jnt_trgt);
 
