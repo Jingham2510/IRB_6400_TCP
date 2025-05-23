@@ -90,7 +90,6 @@ MODULE tcp
 
         ! Waiting for a connection request
         WHILE TRUE DO
-            
 
             
             IF (DOutput(ROB_STATIONARY) = 1) THEN
@@ -203,6 +202,10 @@ MODULE tcp
         !Set the joints specifically        
         CASE "STJT":
             set_jnt cmd_req;
+            
+        !Set the orientation of the TCP
+        CASE "STOR":
+            set_ori cmd_req;
             
         !Set the speed of the robot
         CASE "STSP":
@@ -490,6 +493,39 @@ MODULE tcp
         ENDIF
     ENDPROC
     
+     PROC set_ori(string ori)
+
+        !setup the required variables
+
+        VAR robtarget rob_trgt;
+        VAR bool ok;
+
+        !get the current target
+        VAR robtarget curr_trgt;
+        curr_trgt := CRobT(\Tool:=tool0 \WObj:=wobj0); 
+        
+        !Should be able to convert to the robot target directly
+        ok:= StrToVal(ori,rob_trgt.rot);
+
+
+        !keep everything the same
+        rob_trgt.trans := curr_trgt.trans;
+        rob_trgt.robconf := curr_trgt.robconf;
+        rob_trgt.extax := curr_trgt.extax;
+
+        !if the orientation req is okay - move the robots
+        IF ok THEN                   
+            !Move the robot to the target
+            MoveJ rob_trgt, v100, fine, tool0;
+            SocketSend client_socket\Str:="STOR OK" + "!";
+        ENDIF
+
+        IF NOT ok THEN
+            !If something breaks
+            TPWrite "Invalid target ori";
+            SocketSend client_socket\Str:="INVALID ORI" + "!";
+        ENDIF
+    ENDPROC
     
     !Moves the robot to a set position via target joint angles
     PROC set_jnt(string target_jnts)
