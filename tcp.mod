@@ -330,6 +330,9 @@ MODULE tcp
             !Change the queue end flag
             queue_end := FALSE;
             
+            !Change the trajectory done flag
+            traj_done := FALSE;
+            
             
             SocketSend client_socket\Str:= "OK!";
 
@@ -387,6 +390,9 @@ MODULE tcp
             
             !Change the queue end flag
             queue_end := FALSE;
+            
+            !Change the trajectory done flag
+            traj_done := FALSE;
             
             SocketSend client_socket\Str:= "OK!";
 
