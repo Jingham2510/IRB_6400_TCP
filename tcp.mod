@@ -65,11 +65,11 @@ MODULE tcp
         IF ROBOS() AND (NOT fc_cal) THEN                
      
             !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
-            test_load := FCLoadId();
             
-            MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -10), v100, fine, sph_end_eff;
-    
-            !MOVE HERE
+            MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -10), v100, fine, sph_end_eff;            
+            
+            test_load := FCLoadId();           
+            
             FCCalib test_load;      
             
             fc_cal := TRUE;
@@ -79,6 +79,19 @@ MODULE tcp
 
         !Goto for if the socket closes
         start_no_cali:
+       
+        
+        !Reset the trajectory pointers - essentially overwrite any old trajectories
+        head := 1;
+        tail := 1;    
+        lst_trans_pnt := -1;
+        lst_rot_pnt := -1;
+        run_trajectory := FALSE;
+        conc_count := 0;
+        traj_done := FALSE;
+        still_cnt := 0;
+        queue_end := TRUE;   
+        go_msg := FALSE;
         
         
         !Open the local socket
@@ -90,6 +103,20 @@ MODULE tcp
 
         ! Waiting for a connection request
         WHILE TRUE DO
+            
+            !If the trajectory is finished, reset the state of the trajectory queue and associated variables
+            IF traj_done = TRUE THEN
+                head := 1;
+                tail := 1;    
+                lst_trans_pnt := -1;
+                lst_rot_pnt := -1;
+                run_trajectory := FALSE;
+                conc_count := 0;
+                traj_done := FALSE;
+                still_cnt := 0;
+                queue_end := TRUE;   
+                go_msg := FALSE;
+            ENDIF
 
             
             IF (DOutput(ROB_STATIONARY) = 1) THEN
@@ -132,9 +159,9 @@ MODULE tcp
   
 
         
-    UNDO
-        !Just incase something breaks - panic and close the sockets
-        close_sockets;
+    !UNDO
+    !Just incase something breaks - panic and close the sockets
+    !close_sockets;
     
 
     ENDPROC
@@ -430,25 +457,29 @@ MODULE tcp
         !Setup the trigger
         TriggIO set_move_flag, 0,\Dop:= move_started, 1;
         
+        
+        
         IF (conc_count < 5) THEN
             
             !Set the robot to move to the desired point
             TriggL \Conc, next_trg, des_speed, set_move_flag, fine , sph_end_eff;
             
-            Incr conc_count;
+            Incr conc_count;            
+            
             
         ELSE
+                    
             !Set the robot to move to the desired point
-            TriggL next_trg, des_speed, set_move_flag, fine , sph_end_eff;
+            TriggL next_trg, des_speed, set_move_flag, fine, sph_end_eff;
             
-            conc_count := 0;
+            conc_count := 0;            
         
         ENDIF
         
-        
-        
         !increment the head counter
         Incr head;
+        
+        
         
         !Check if the trajectory queue is empty and update the flags
         IF(head = tail) THEN
