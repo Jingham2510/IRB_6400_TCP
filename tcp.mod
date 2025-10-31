@@ -23,6 +23,9 @@ MODULE tcp
 
     !If force control has been calibrated
     VAR bool fc_cal := FALSE;
+    
+    !Force control flags/values
+    VAR bool fc_mode := FALSE;
      
     !Initialise Trajectory queue
     VAR robtarget traj_coord_queue{100000};    
@@ -298,6 +301,10 @@ MODULE tcp
         !Reports the Torque of every joint
         CASE "GTTQ":
             report_torque;
+            
+        !Sets the force mode
+        CASE "STFM":
+            set_force_mode cmd_req;
         
         
         !if unprogrammed/unknown command is sent    
@@ -451,7 +458,7 @@ MODULE tcp
         !Reset the start_move flag
         SetDO move_started, 0;
         
-        TPWrite "Signal Low";
+        !TPWrite "Signal Low";
         
               
         !Setup the trigger
@@ -697,11 +704,16 @@ MODULE tcp
     !Report the force being enacted on the robot
     PROC report_force()
     
+        !Check if the robot has actual forces to measure
         IF ROBOS() THEN        
             test_force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
             SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
             
+           
+            
+        !Otherwise send a set of default values
         ELSE
+            
             SocketSend client_socket\Str:= "{-1,-1,-1,-1,-1,-1}!";
         
         ENDIF
@@ -765,6 +777,35 @@ MODULE tcp
         !Exit the program
         EXIT;
 
+    ENDPROC
+    
+    
+    !Turn force control mode on/off
+    PROC set_force_mode(string mode)
+        
+       !Turn the mode string to a bool
+        VAR bool mode_setting;
+             
+        
+        Var bool ok;
+        ok := StrToVal(mode, mode_setting);        
+       
+        
+        !Check that it was converted okay
+        IF NOT ok THEN           
+            SocketSend client_socket\Str:= "FAILED TO SWAP!";
+            RETURN;
+        ENDIF             
+        
+        
+        !Use the bool to set the fc setting
+        fc_mode := mode_setting;
+     
+       
+        !Send the confirmation message
+        SocketSend client_socket\Str:="FM:"+ ValToStr(mode_setting) + "!";
+        
+        
     ENDPROC
 
 ENDMODULE
