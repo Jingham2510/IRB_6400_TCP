@@ -26,6 +26,9 @@ MODULE tcp
     
     !Force control flags/values
     VAR bool fc_mode := FALSE;
+    
+    VAR string force_ax := "na";
+    VAR num force_target := 0;
      
     !Initialise Trajectory queue
     VAR robtarget traj_coord_queue{100000};    
@@ -305,6 +308,10 @@ MODULE tcp
         !Sets the force mode
         CASE "STFM":
             set_force_mode cmd_req;
+            
+        !Sets the force config
+        CASE "STFC":
+            set_force_cntrl_config cmd_req;
         
         
         !if unprogrammed/unknown command is sent    
@@ -785,25 +792,66 @@ MODULE tcp
         
        !Turn the mode string to a bool
         VAR bool mode_setting;
-             
-        
-        Var bool ok;
-        ok := StrToVal(mode, mode_setting);        
-       
-        
+        VAR bool ok;
+        ok := StrToVal(mode, mode_setting);       
         !Check that it was converted okay
         IF NOT ok THEN           
             SocketSend client_socket\Str:= "FAILED TO SWAP!";
             RETURN;
         ENDIF             
         
-        
         !Use the bool to set the fc setting
         fc_mode := mode_setting;
-     
-       
         !Send the confirmation message
         SocketSend client_socket\Str:="FM:"+ ValToStr(mode_setting) + "!";
+    ENDPROC
+    
+    !Set the force control config
+    PROC set_force_cntrl_config(string config)
+        
+        !Define all variables
+        VAR string ax;
+        VAR string targ_string;
+        VAR num targ;
+       
+        VAR bool ok;
+        
+        !Find the dot in the string
+        VAR num sep_pos;
+        sep_pos := StrFind(config, 1, ".");
+        
+        !Split the axes and the target
+        ax := StrPart(config, 1, sep_pos - 1);    
+        targ_string := StrPart(config, sep_pos+1, StrLen(config) - sep_pos);
+        
+        TpWrite targ_string;
+        
+        !Check that the specified axis is valid
+        TEST ax
+            CASE "X":
+                force_ax := ax;
+            CASE "Z":
+                force_ax := ax;
+            CASE "Y":
+                force_ax := ax;
+            DEFAULT:
+                SocketSend client_socket\Str:= "INVALID AXIS CONFIG!";
+                RETURN;            
+        ENDTEST
+        
+        !Cast target value to correct type
+        ok := StrToVal(targ_string, targ);       
+        
+        !Check casting worked
+        IF NOT ok THEN
+            SocketSend client_socket\Str:= "FAILED TO SET CONFIG!";
+            RETURN;
+        ENDIF        
+         !Set the variables
+        force_target := targ;
+        
+        !Send back confirmation message
+        SocketSend client_socket\Str:="FC:" + force_ax + "." + ValToStr(force_target) + "!";
         
         
     ENDPROC
