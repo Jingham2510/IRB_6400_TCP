@@ -110,6 +110,8 @@ MODULE tcp
         ! Waiting for a connection request
         WHILE TRUE DO
             
+            in_bounds_check;
+            
             !If the trajectory is finished, reset the state of the trajectory queue and associated variables
             IF traj_done = TRUE THEN
                 head := 1;
@@ -118,7 +120,6 @@ MODULE tcp
                 lst_rot_pnt := -1;
                 run_trajectory := FALSE;
                 conc_count := 0;
-                traj_done := FALSE;
                 still_cnt := 0;
                 queue_end := TRUE;   
                 go_msg := FALSE;
@@ -199,6 +200,41 @@ MODULE tcp
     ENDPROC
 
 
+    !Checks the position of the robot TCP and ensures that it is within acceptable/safe boundaries
+    PROC in_bounds_check()
+        
+        !Set the bounds
+        CONST num MAX_X := 650;
+        CONST num MIN_X := -425;
+        
+        CONST num MAX_Y := 2650;
+        CONST num MIN_Y := 1350;
+        
+        CONST num MAX_Z := 1000;
+        CONST num MIN_Z := 220;
+        
+        
+        !Get the TCPs current position
+        VAR robtarget curr_pos;
+        curr_pos :=  CRobT();
+        
+        !Compare the posiiton with the bounds
+        IF curr_pos.trans.x >= MAX_X OR curr_pos.trans.x <= MIN_X OR curr_pos.trans.y >= MAX_Y OR curr_pos.trans.y <= MIN_Y OR curr_pos.trans.Z >= MAX_Z OR curr_pos.trans.Z <= MIN_Z THEN            
+                    
+            !If it breaches any of the bound rules - emergency stop and stop the program
+            StopMove \Quick;
+            Stop \NoRegain;
+            
+            ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -jog back to a start position";
+            
+        ENDIF
+        
+
+        
+        
+    ENDPROC
+    
+    
     !Handles Commands
     PROC cmd_handler(string cmd)
 
