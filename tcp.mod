@@ -210,7 +210,7 @@ MODULE tcp
         CONST num MAX_Y := 2650;
         CONST num MIN_Y := 1350;
         
-        CONST num MAX_Z := 1000;
+        CONST num MAX_Z := 2000;
         CONST num MIN_Z := 220;
         
         
@@ -222,10 +222,10 @@ MODULE tcp
         IF curr_pos.trans.x >= MAX_X OR curr_pos.trans.x <= MIN_X OR curr_pos.trans.y >= MAX_Y OR curr_pos.trans.y <= MIN_Y OR curr_pos.trans.Z >= MAX_Z OR curr_pos.trans.Z <= MIN_Z THEN            
                     
             !If it breaches any of the bound rules - emergency stop and stop the program
-            StopMove \Quick;
+            StopMove \Quick;            
+            ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -jog back to a start position";
             Stop \NoRegain;
             
-            ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -jog back to a start position";
             
         ENDIF
         
