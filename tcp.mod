@@ -16,7 +16,7 @@ MODULE tcp
     
     VAR loaddata test_load := [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0];
     
-    VAR fcforcevector test_force_vector;
+    VAR fcforcevector force_vector;
     
     
 
@@ -157,7 +157,7 @@ MODULE tcp
         ENDWHILE
     
         ERROR
-            !If the socket is closed remotely - send pp back to main - behaviour becomes undefined but may be able to retain some semblance of control
+            !If the socket is closed remotely - send program pointer back to main - behaviour becomes undefined but may be able to retain some semblance of control
            IF ERRNO = ERR_SOCK_CLOSED THEN
            
                 !! really feels like cheating! and itll just go down and down the main loop but...
@@ -591,8 +591,72 @@ MODULE tcp
     !Uses the relative movement queue combined iwth the force requirements to determine the movement
     PROC next_force_pnt()
         
-        !TODO
+        !Setup the trigger
+        VAR triggdata set_move_flag;
         
+        VAR num force_diff;
+        
+             
+        
+
+        !Access the xyz coords to move by    
+        VAR num rel_move{3};
+        rel_move{1} := rel_move_queue{head, 1};
+        rel_move{2} := rel_move_queue{head, 2};
+        rel_move{3} := rel_move_queue{head, 3};
+        
+        !Reset the start_move flag
+        SetDO move_started, 0;        
+              
+        !Setup the trigger
+        TriggIO set_move_flag, 0,\Dop:= move_started, 1; 
+        
+        
+        
+        
+        !Calculate the difference between the desired force and the actual force 
+        !FOR NOW ONLY Z
+        IF NOT force_ax = "Z" THEN
+            !PANIC!
+            EXIT;
+        ENDIF
+        
+        force_diff := force_target - force_vector.zforce; 
+        
+        TpWrite ValToStr(force_diff);        
+        
+        !From the difference calculate how far to move in the desired axis
+        !TODO! 
+        
+        !Check that the concurrent movements haven't been reached
+        IF (conc_count < 5) THEN
+            
+            !Move the tool by the modified amount
+            TriggL \Conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), rel_move{1}, rel_move{2}, rel_move{3}), des_speed, set_move_flag, fine , sph_end_eff;
+            Incr conc_count;            
+            
+        ELSE    
+            !Set the robot to move to the desired point
+             TriggL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), rel_move{1}, rel_move{2}, rel_move{3}), des_speed, set_move_flag, fine , sph_end_eff;
+            
+             !Reset the concurrent move count
+            conc_count := 0;            
+        
+        ENDIF
+        
+        
+        
+        !increment the head counter
+        Incr head;
+        
+        !Check if the trajectory queue is empty and update the flags
+        IF(head = tail) THEN
+            queue_end := TRUE;
+            run_trajectory := FALSE;
+        ENDIF
+        
+        
+          
         
     ENDPROC
     
@@ -807,8 +871,8 @@ MODULE tcp
     
         !Check if the robot has actual forces to measure
         IF ROBOS() THEN        
-            test_force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
-            SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
+            force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
+            SocketSend client_socket\Str:= ValToStr(force_vector) + "!";
             
            
             
@@ -829,9 +893,9 @@ MODULE tcp
         
         SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)) + "!";
         
-        test_force_vector := FCGetForce(\Tool:=sph_end_eff);
+        force_vector := FCGetForce(\Tool:=sph_end_eff);
         
-        SocketSend client_socket\Str:= ValToStr(test_force_vector) + "!";
+        SocketSend client_socket\Str:= ValToStr(force_vector) + "!";
         
     
     ENDPROC
