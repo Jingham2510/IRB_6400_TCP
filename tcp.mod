@@ -32,6 +32,7 @@ MODULE tcp
      
     !Initialise Trajectory queue
     VAR robtarget traj_coord_queue{100000};    
+    VAR num rel_move_queue{100000, 3};
     
     VAR num head := 1;
     VAR num tail := 1;
@@ -134,8 +135,14 @@ MODULE tcp
             
             !Check if the trajectory queue is finished
             IF (run_trajectory and (not queue_end)) and ((DOutput(move_started) = 1) and (DOutput(ROB_STATIONARY) = 1)) THEN
-                TpWrite "Load Next Point";
-                next_traj_pnt;
+                TpWrite "Load Next Point - Force Mode: " + ValToStr(fc_mode);
+                
+                !Check if it needs to be a force mode trajectory or not 
+                IF NOT fc_mode THEN
+                    next_traj_pnt;
+                ELSE
+                    next_force_pnt;                    
+                ENDIF
                 
             ELSEIF (queue_end AND still_cnt > 20) THEN
                 traj_done := TRUE;
@@ -211,7 +218,7 @@ MODULE tcp
         CONST num MIN_Y := 1350;
         
         CONST num MAX_Z := 2000;
-        CONST num MIN_Z := 220;
+        CONST num MIN_Z := 100;
         
         
         !Get the TCPs current position
@@ -305,8 +312,7 @@ MODULE tcp
             report_joints;
             
         !Report the moving state
-        CASE "MVST":
-       
+        CASE "MVST":       
             SocketSend client_socket\Str:= ValToStr(DOutput(ROB_STATIONARY)) + "!";
             
         !Add a tranlation to the trajectory queue
@@ -348,6 +354,9 @@ MODULE tcp
         !Sets the force config
         CASE "STFC":
             set_force_cntrl_config cmd_req;
+            
+        CASE "RLAD":
+            force_add_pnt cmd_req;
         
         
         !if unprogrammed/unknown command is sent    
@@ -419,8 +428,55 @@ MODULE tcp
             !If something breaks
             TPWrite "Invalid target position";
             SocketSend client_socket\Str:="INVALID POS" + "!";
-        ENDIF  
+        ENDIF       
         
+        
+    ENDPROC
+    
+    !Adds a relative xyz movement to the relative movement queue
+    PROC force_add_pnt(string add_rel_mov)
+        
+        !Turn the string into a xyz coordinate
+        VAR num new_pos{3};
+        VAR bool ok;    
+        
+        
+        !Split the string into the three seperate points      
+                
+        !Convert XYZ strings into the coordinates
+        ok := StrToVal(add_rel_mov, new_pos);        
+    
+        
+        !If the conversion to num was okay 
+        IF ok THEN
+    
+            !Add the coordinate to the queue
+            rel_move_queue{tail, 1} := new_pos{1};
+            rel_move_queue{tail, 2} := new_pos{2};
+            rel_move_queue{tail, 3} := new_pos{3};
+            
+            
+            TpWrite ValToStr(rel_move_queue{tail,2});
+            
+            
+            !Increment the tail and set the flags
+            Incr tail;
+            
+            
+            queue_end := FALSE;
+            traj_done := FALSE;
+                        
+            SocketSend client_socket\Str:= "OK!";
+                     
+            
+        ENDIF
+        
+        IF NOT ok THEN
+            !If something breaks
+            TPWrite "Invalid relative movement";
+            SocketSend client_socket\Str:="INVALID RELMOV XYZ" + "!";
+        ENDIF  
+            
         
         
     ENDPROC
@@ -489,8 +545,6 @@ MODULE tcp
     !Move to the next point in the trajectory    
     PROC next_traj_pnt()          
         
-            
-        
         !Setup the trigger for the trajectory point
         VAR triggdata set_move_flag;
         
@@ -508,14 +562,10 @@ MODULE tcp
         TriggIO set_move_flag, 0,\Dop:= move_started, 1;
         
         
-        
         IF (conc_count < 5) THEN
-            
             !Set the robot to move to the desired point
             TriggL \Conc, next_trg, des_speed, set_move_flag, fine , sph_end_eff;
-            
             Incr conc_count;            
-            
             
         ELSE
                     
@@ -529,18 +579,26 @@ MODULE tcp
         !increment the head counter
         Incr head;
         
-        
-        
         !Check if the trajectory queue is empty and update the flags
         IF(head = tail) THEN
             queue_end := TRUE;
             run_trajectory := FALSE;
         ENDIF
-   
-        
-    
 
     ENDPROC
+    
+    
+    !Uses the relative movement queue combined iwth the force requirements to determine the movement
+    PROC next_force_pnt()
+        
+        !TODO
+        
+        
+    ENDPROC
+    
+
+    
+  
     
 
     !Moves the robot end-affector to a specified posiiton via robtarget
