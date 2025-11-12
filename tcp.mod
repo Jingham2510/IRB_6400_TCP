@@ -443,12 +443,12 @@ MODULE tcp
     !Adds a relative xyz movement to the relative movement queue
     PROC force_add_pnt(string add_rel_mov)
         
+       
+        
         !Turn the string into a xyz coordinate
         VAR num new_pos{3};
         VAR bool ok;    
-        
-        
-        !Split the string into the three seperate points      
+           
                 
         !Convert XYZ strings into the coordinates
         ok := StrToVal(add_rel_mov, new_pos);        
@@ -463,15 +463,13 @@ MODULE tcp
             rel_move_queue{tail, 3} := new_pos{3};
             
             
-            TpWrite ValToStr(rel_move_queue{tail,2});
-            
-            
             !Increment the tail and set the flags
             Incr tail;
             
-            
             queue_end := FALSE;
             traj_done := FALSE;
+            
+            !TpWrite "SENDING OK!";
                         
             SocketSend client_socket\Str:= "OK!";
                      
@@ -630,7 +628,7 @@ MODULE tcp
         
         force_diff := force_target - force_vector.zforce; 
         
-        TpWrite ValToStr(force_diff);        
+        TpWrite "Force diff: "+ ValToStr(force_diff);        
         
         !From the difference calculate how far to move in the desired axis
         !TODO! 
@@ -989,7 +987,7 @@ MODULE tcp
         ax := StrPart(config, 1, sep_pos - 1);    
         targ_string := StrPart(config, sep_pos+1, StrLen(config) - sep_pos);
         
-        TpWrite targ_string;
+        !TpWrite targ_string;
         
         !Check that the specified axis is valid
         TEST ax
