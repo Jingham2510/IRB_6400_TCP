@@ -111,7 +111,10 @@ MODULE tcp
         ! Waiting for a connection request
         WHILE TRUE DO
             
-            in_bounds_check;
+            !if the real robot - check in bounds
+            IF RobOS() THEN            
+                in_bounds_check;            
+            ENDIF
             
             !If the trajectory is finished, reset the state of the trajectory queue and associated variables
             IF traj_done = TRUE THEN
@@ -209,6 +212,7 @@ MODULE tcp
 
     !Checks the position of the robot TCP and ensures that it is within acceptable/safe boundaries
     PROC in_bounds_check()
+       
         
         !Set the bounds
         CONST num MAX_X := 650;
@@ -220,9 +224,12 @@ MODULE tcp
         CONST num MAX_Z := 2000;
         CONST num MIN_Z := 100;
         
+
         
         !Get the TCPs current position
         VAR robtarget curr_pos;
+ 
+        
         curr_pos :=  CRobT();
         
         !Compare the posiiton with the bounds
