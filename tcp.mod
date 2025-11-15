@@ -51,9 +51,7 @@ MODULE tcp
     
     
     !Empty Flag
-    VAR bool queue_end := TRUE;    
-    !Go msg workaround
-    VAR bool go_msg := FALSE;
+    VAR bool queue_end := TRUE;  
     
     !ROBOT VARIABLES
     VAR num des_speed_num := 50;
@@ -97,9 +95,7 @@ MODULE tcp
         conc_count := 0;
         traj_done := FALSE;
         still_cnt := 0;
-        queue_end := TRUE;   
-        go_msg := FALSE;
-        
+        queue_end := TRUE;
         
         !Open the local socket
         open_local_socket;
@@ -126,7 +122,6 @@ MODULE tcp
                 conc_count := 0;
                 still_cnt := 0;
                 queue_end := TRUE;   
-                go_msg := FALSE;
             ENDIF
 
             
@@ -181,6 +176,11 @@ MODULE tcp
     !close_sockets;
     
 
+    ENDPROC
+    
+    !Convenience wrapper
+    PROC resp(string msg)        
+        SocketSend client_socket\Str:= msg + "!";       
     ENDPROC
 
 
@@ -271,11 +271,11 @@ MODULE tcp
  
         CASE "ECHO":
             !Repeats the string back to the controller
-            SocketSend client_socket\Str:="ECHO_MSG: "+cmd_req + "!";
+            resp("ECHO_MSG: "+cmd_req);
 
             !Close the sockets (should fix opening multiple similar sockets)
         CASE "CLOS":
-            SocketSend client_socket\Str:="CLOSING PORT" + "!";
+            resp("CLOSING PORT");
             close_sockets;
 
             !Request the robot move to a specific position
@@ -320,7 +320,7 @@ MODULE tcp
             
         !Report the moving state
         CASE "MVST":       
-            SocketSend client_socket\Str:= ValToStr(DOutput(ROB_STATIONARY)) + "!";
+            Resp(ValToStr(DOutput(ROB_STATIONARY)));
             
         !Add a tranlation to the trajectory queue
         CASE "TQAD":
@@ -334,20 +334,18 @@ MODULE tcp
         !Start the trajectory queue
         CASE "TJGO":
             run_trajectory := TRUE;
-            go_msg := FALSE;
-            SocketSend client_socket\Str:="GOING!";
-            go_msg := TRUE;
+            resp("GOING");            
             SetDo move_started, 1;
 
             
         !Stop the trajectory queue
         CASE "TJST":
             run_trajectory := FALSE;
-            SocketSend client_socket\Str:="STOPPING!";
+            resp("STOPPING");
             
         !Reports whether the trajectory queue has reached the end
         CASE "TJDN":        
-            SocketSend client_socket\Str:= ValToStr(traj_done) + "!";
+            resp(ValToStr(traj_done));
             
         
         !Reports the Torque of every joint
@@ -369,7 +367,7 @@ MODULE tcp
         !if unprogrammed/unknown command is sent    
         DEFAULT:
             TPWrite "INVALID CMD: " + cmd_ID;
-            SocketSend client_socket\Str:="UNKNOWN CMD" + "!";
+            resp("UNKNOWN CMD");
 
         ENDTEST
 
@@ -427,14 +425,14 @@ MODULE tcp
             traj_done := FALSE;
             
             
-            SocketSend client_socket\Str:= "OK!";
+            resp("OK");
 
         ENDIF
         
         IF NOT ok THEN
             !If something breaks
             TPWrite "Invalid target position";
-            SocketSend client_socket\Str:="INVALID POS" + "!";
+            resp("INVALID POS");
         ENDIF       
         
         
@@ -471,7 +469,7 @@ MODULE tcp
             
             !TpWrite "SENDING OK!";
                         
-            SocketSend client_socket\Str:= "OK!";
+            resp("OK");
                      
             
         ENDIF
@@ -479,7 +477,7 @@ MODULE tcp
         IF NOT ok THEN
             !If something breaks
             TPWrite "Invalid relative movement";
-            SocketSend client_socket\Str:="INVALID RELMOV XYZ" + "!";
+            resp("INVALID RELMOV XYZ");
         ENDIF  
             
         
@@ -532,14 +530,14 @@ MODULE tcp
             !Change the trajectory done flag
             traj_done := FALSE;
             
-            SocketSend client_socket\Str:= "OK!";
+            resp("OK");
 
         ENDIF
         
         IF NOT ok THEN
             !If something breaks
             TPWrite "Invalid target position";
-            SocketSend client_socket\Str:="INVALID POS" + "!";
+            resp("INVALID ORI");
         ENDIF  
         
         
@@ -601,9 +599,6 @@ MODULE tcp
         
         VAR num force_diff;
         
-             
-        
-
         !Access the xyz coords to move by    
         VAR num rel_move{3};
         rel_move{1} := rel_move_queue{head, 1};
@@ -696,14 +691,14 @@ MODULE tcp
             !Move the robot to the target
             MoveJ rob_trgt_pos, des_speed, fine, sph_end_eff;
 
-            SocketSend client_socket\Str:="MVTO OK" + "!";
+            resp("MVTO OK");
             
         ENDIF
 
         IF NOT ok THEN
             !If something breaks
             TPWrite "Invalid target position";
-            SocketSend client_socket\Str:="INVALID POS" + "!";
+            resp("INVALID POS");
         ENDIF
     ENDPROC
     
@@ -731,13 +726,13 @@ MODULE tcp
         IF ok THEN                   
             !Move the robot to the target
             MoveJ rob_trgt, v100, fine, tool0;
-            SocketSend client_socket\Str:="STOR OK" + "!";
+            resp("STOR OK");
         ENDIF
 
         IF NOT ok THEN
             !If something breaks
             TPWrite "Invalid target ori";
-            SocketSend client_socket\Str:="INVALID ORI" + "!";
+            resp("INVALID ORI");
         ENDIF
     ENDPROC
     
@@ -761,12 +756,12 @@ MODULE tcp
             MoveAbsJ jnt_trgt, des_speed, fine, sph_end_eff;
             
             !Let the client know the move happened
-            SocketSend client_socket\Str:= "STJT CMPL" + "!";
+            resp("STJT CMPL");
         
         ELSE
             !If something breaks
             TPWrite "Invalid target joints";
-            SocketSend client_socket\Str:="INVALID ANGLES" + "!";
+            resp("INVALID ANGLES");
             
         ENDIF
 
@@ -780,7 +775,7 @@ MODULE tcp
         ok := StrtoVal(speed, des_speed_num);
         des_speed := [des_speed_num, 500, 5000, 1000];
         
-        SocketSend client_socket\Str:= "SPEED CHANGED!";
+        resp("SPEED CHANGED");
         
     ENDPROC
     
@@ -847,13 +842,13 @@ MODULE tcp
         endif
         
 
-        SocketSend client_socket\Str:= "MVTL CMPL" + "!";
+        resp("MVTL CMPL");
         
     ENDPROC
     
     !Sends the current position to the tcp socket
     PROC report_pos()        
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)) + "!";  
+        resp(ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)));  
     ENDPROC
     
     !Sends the current orientation to the tcp socket
@@ -864,7 +859,7 @@ MODULE tcp
         curr_targ := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);
         
         !Send all of the euler angles
-        SocketSend client_socket\Str:= "[" + ValToStr(EulerZYX(\X, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Y, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Z, curr_targ.rot)) + "]!";
+        resp("[" + ValToStr(EulerZYX(\X, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Y, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Z, curr_targ.rot)) + "]");
         
     
         
@@ -877,14 +872,14 @@ MODULE tcp
         !Check if the robot has actual forces to measure
         IF ROBOS() THEN        
             force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
-            SocketSend client_socket\Str:= ValToStr(force_vector) + "!";
+            resp(ValToStr(force_vector));
             
            
             
         !Otherwise send a set of default values
         ELSE
             
-            SocketSend client_socket\Str:= "{-1,-1,-1,-1,-1,-1}!";
+            resp("{-1,-1,-1,-1,-1,-1}");
         
         ENDIF
         
@@ -896,18 +891,18 @@ MODULE tcp
     !Sends the current position and force to the tcp socket 
     PROC report_pos_and_force()
         
-        SocketSend client_socket\Str:= ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)) + "!";
+        resp(ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)));
         
         force_vector := FCGetForce(\Tool:=sph_end_eff);
         
-        SocketSend client_socket\Str:= ValToStr(force_vector) + "!";
+        resp(ValToStr(force_vector));
         
     
     ENDPROC
     
     !Report the robots model
     PROC report_model()
-        SocketSend client_socket\Str:= GetSysInfo(\RobotType) + "!";        
+        resp(GetSysInfo(\RobotType));        
     ENDPROC
     
     !Report the robots joint angles
@@ -917,7 +912,7 @@ MODULE tcp
         
         joints := CJointT();
         
-        SocketSend client_socket\Str:= ValToStr(joints.robax) + "!";
+        resp(ValToStr(joints.robax));
         
     ENDPROC
     
@@ -928,12 +923,12 @@ MODULE tcp
         !TpWrite ValToStr(GetMotorTorque(1));
         
         !Send the torques of each joint in a comma seperated format
-        SocketSend client_socket\Str:= "{" + ValToStr(GetMotorTorque(1)) + "," 
+        resp("{" + ValToStr(GetMotorTorque(1)) + "," 
                                             + ValToStr(GetMotorTorque(2)) + ","
                                             + ValToStr(GetMotorTorque(3)) + ","
                                             + ValToStr(GetMotorTorque(4)) + ","
                                             + ValToStr(GetMotorTorque(5)) + ","
-                                            + ValToStr(GetMotorTorque(6)) + "}!";
+                                            + ValToStr(GetMotorTorque(6)) + "}");
         
         
     ENDPROC
@@ -959,14 +954,14 @@ MODULE tcp
         ok := StrToVal(mode, mode_setting);       
         !Check that it was converted okay
         IF NOT ok THEN           
-            SocketSend client_socket\Str:= "FAILED TO SWAP!";
+            resp("FAILED TO SWAP");
             RETURN;
         ENDIF             
         
         !Use the bool to set the fc setting
         fc_mode := mode_setting;
         !Send the confirmation message
-        SocketSend client_socket\Str:="FM:"+ ValToStr(mode_setting) + "!";
+        resp("FM:"+ ValToStr(mode_setting));
     ENDPROC
     
     !Set the force control config
@@ -998,7 +993,7 @@ MODULE tcp
             CASE "Y":
                 force_ax := ax;
             DEFAULT:
-                SocketSend client_socket\Str:= "INVALID AXIS CONFIG!";
+                resp("INVALID AXIS CONFIG");
                 RETURN;            
         ENDTEST
         
@@ -1007,14 +1002,14 @@ MODULE tcp
         
         !Check casting worked
         IF NOT ok THEN
-            SocketSend client_socket\Str:= "FAILED TO SET CONFIG!";
+            resp("FAILED TO SET CONFIG");
             RETURN;
         ENDIF        
          !Set the variables
         force_target := targ;
         
         !Send back confirmation message
-        SocketSend client_socket\Str:="FC:" + force_ax + "." + ValToStr(force_target) + "!";
+        resp("FC:" + force_ax + "." + ValToStr(force_target));
         
         
     ENDPROC
