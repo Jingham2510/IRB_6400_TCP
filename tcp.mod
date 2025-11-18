@@ -56,6 +56,10 @@ MODULE tcp
     !ROBOT VARIABLES
     VAR num des_speed_num := 50;
     VAR speeddata des_speed := [50, 500, 5000, 1000];
+    
+    !Force compensation values
+    VAR bool fm_compensate := FALSE;
+    VAR num comp_dist := 0;
 
 
     PROC main()      
@@ -359,9 +363,14 @@ MODULE tcp
         !Sets the force config
         CASE "STFC":
             set_force_cntrl_config cmd_req;
-            
+        
+        !Add a relative movement to the rel_move queue
         CASE "RLAD":
             force_add_pnt cmd_req;
+            
+        !Set the compensation movement for achieving the desired force
+        CASE "FCCM":
+            set_force_compensation cmd_req;
         
         
         !if unprogrammed/unknown command is sent    
@@ -620,13 +629,20 @@ MODULE tcp
             !PANIC!
             EXIT;
         ENDIF
+       
         
-        force_diff := force_target - force_vector.zforce; 
+        !Check to see if the movement should compensate
+        IF fm_compensate THEN
         
-        TpWrite "Force diff: "+ ValToStr(force_diff);        
-        
-        !From the difference calculate how far to move in the desired axis
-        !TODO! 
+            IF force_ax = "Z" THEN
+                rel_move{3} := rel_move{3} + comp_dist;
+            ENDIF
+            
+            !Turn off the compensation
+            fm_compensate := FALSE;
+            
+        ENDIF
+         
         
         !Check that the concurrent movements haven't been reached
         IF (conc_count < 5) THEN
@@ -1012,6 +1028,24 @@ MODULE tcp
         resp("FC:" + force_ax + "." + ValToStr(force_target));
         
         
+    ENDPROC
+    
+    
+    !Set the force compensation flag and the value
+    PROC set_force_compensation(string comp_val)
+        
+        !Parse the value into the value variable
+        Var bool ok;
+        ok := StrToVal(comp_val, comp_dist);
+        
+        IF ok THEN            
+            !set the compensation flag high
+            fm_compensate := TRUE;            
+            resp("OK");            
+        ELSE
+            resp("FAILED TO CONVERT");        
+        ENDIF   
+     
     ENDPROC
 
 ENDMODULE
