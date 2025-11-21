@@ -14,21 +14,6 @@ MODULE tcp
                         [1.0687, [0, 0, 42.664],[1, 0, 0, 0], 0, 0, 0]];
     
     
-    VAR loaddata test_load := [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0];
-    
-    VAR fcforcevector force_vector;
-    
-    
-
-
-    !If force control has been calibrated
-    VAR bool fc_cal := FALSE;
-    
-    !Force control flags/values
-    VAR bool fc_mode := FALSE;
-    
-    VAR string force_ax := "na";
-    VAR num force_target := 0;
      
     !Initialise Trajectory queue
     VAR robtarget traj_coord_queue{100000};    
@@ -62,28 +47,13 @@ MODULE tcp
     VAR num comp_dist := 0;
 
 
-    PROC main()      
+    PROC main()     
         
 
 
 
         SetDo move_started, 0;
-        
-        !Checks if force calibraiton is required or not
-        !Not required for the virtual controller
-        IF ROBOS() AND (NOT fc_cal) THEN                
-     
-            !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
-            
-            MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -10), v100, fine, sph_end_eff;            
-            
-            test_load := FCLoadId();           
-            
-            FCCalib test_load;      
-            
-            fc_cal := TRUE;
-        
-        ENDIF
+
                 
 
         !Goto for if the socket closes
@@ -137,14 +107,10 @@ MODULE tcp
             
             !Check if the trajectory queue is finished
             IF (run_trajectory and (not queue_end)) and ((DOutput(move_started) = 1) and (DOutput(ROB_STATIONARY) = 1)) THEN
-                TpWrite "Load Next Point - Force Mode: " + ValToStr(fc_mode);
                 
-                !Check if it needs to be a force mode trajectory or not 
-                IF NOT fc_mode THEN
+           
                     next_traj_pnt;
-                ELSE
-                    next_force_pnt;                    
-                ENDIF
+              
                 
             ELSEIF (queue_end AND still_cnt > 20) THEN
                 traj_done := TRUE;
@@ -309,11 +275,7 @@ MODULE tcp
         !Report the robots current orientation
         CASE "GTOR":
             report_orientation;
-            
-        !Report the robots current force
-        CASE "GTFC":
-            report_force;
-            
+                  
         !Report the robots model number
         CASE "RMDL":
             report_model;
@@ -355,22 +317,12 @@ MODULE tcp
         !Reports the Torque of every joint
         CASE "GTTQ":
             report_torque;
-            
-        !Sets the force mode
-        CASE "STFM":
-            set_force_mode cmd_req;
-            
-        !Sets the force config
-        CASE "STFC":
-            set_force_cntrl_config cmd_req;
+
         
         !Add a relative movement to the rel_move queue
         CASE "RLAD":
             force_add_pnt cmd_req;
-            
-        !Set the compensation movement for achieving the desired force
-        CASE "FCCM":
-            set_force_compensation cmd_req;
+
         
         
         !if unprogrammed/unknown command is sent    
@@ -446,52 +398,7 @@ MODULE tcp
         
         
     ENDPROC
-    
-    !Adds a relative xyz movement to the relative movement queue
-    PROC force_add_pnt(string add_rel_mov)
-        
-       
-        
-        !Turn the string into a xyz coordinate
-        VAR num new_pos{3};
-        VAR bool ok;    
-           
-                
-        !Convert XYZ strings into the coordinates
-        ok := StrToVal(add_rel_mov, new_pos);        
-    
-        
-        !If the conversion to num was okay 
-        IF ok THEN
-    
-            !Add the coordinate to the queue
-            rel_move_queue{tail, 1} := new_pos{1};
-            rel_move_queue{tail, 2} := new_pos{2};
-            rel_move_queue{tail, 3} := new_pos{3};
-            
-            
-            !Increment the tail and set the flags
-            Incr tail;
-            
-            queue_end := FALSE;
-            traj_done := FALSE;
-            
-            !TpWrite "SENDING OK!";
-                        
-            resp("OK");
-                     
-            
-        ENDIF
-        
-        IF NOT ok THEN
-            !If something breaks
-            TPWrite "Invalid relative movement";
-            resp("INVALID RELMOV XYZ");
-        ENDIF  
-            
-        
-        
-    ENDPROC
+
     
     
      !Add a point to the trajectory
@@ -600,82 +507,8 @@ MODULE tcp
     ENDPROC
     
     
-    !Uses the relative movement queue combined iwth the force requirements to determine the movement
-    PROC next_force_pnt()
-        
-        !Setup the trigger
-        VAR triggdata set_move_flag;
-        
-        VAR num force_diff;
-        
-        !Access the xyz coords to move by    
-        VAR num rel_move{3};
-        rel_move{1} := rel_move_queue{head, 1};
-        rel_move{2} := rel_move_queue{head, 2};
-        rel_move{3} := rel_move_queue{head, 3};
-        
-        !Reset the start_move flag
-        SetDO move_started, 0;        
-              
-        !Setup the trigger
-        TriggIO set_move_flag, 0,\Dop:= move_started, 1; 
-        
-        
-        
-        
-        !Calculate the difference between the desired force and the actual force 
-        !FOR NOW ONLY Z
-        IF NOT force_ax = "Z" THEN
-            !PANIC!
-            EXIT;
-        ENDIF
-       
-        
-        !Check to see if the movement should compensate
-        IF fm_compensate THEN
-        
-            IF force_ax = "Z" THEN
-                rel_move{3} := rel_move{3} + comp_dist;
-            ENDIF
-            
-            !Turn off the compensation
-            fm_compensate := FALSE;
-            
-        ENDIF
-         
-        
-        !Check that the concurrent movements haven't been reached
-        IF (conc_count < 5) THEN
-            
-            !Move the tool by the modified amount
-            TriggL \Conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), rel_move{1}, rel_move{2}, rel_move{3}), des_speed, set_move_flag, fine , sph_end_eff;
-            Incr conc_count;            
-            
-        ELSE    
-            !Set the robot to move to the desired point
-             TriggL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), rel_move{1}, rel_move{2}, rel_move{3}), des_speed, set_move_flag, fine , sph_end_eff;
-            
-             !Reset the concurrent move count
-            conc_count := 0;            
-        
-        ENDIF
-        
-        
-        
-        !increment the head counter
-        Incr head;
-        
-        !Check if the trajectory queue is empty and update the flags
-        IF(head = tail) THEN
-            queue_end := TRUE;
-            run_trajectory := FALSE;
-        ENDIF
-        
-        
-          
-        
-    ENDPROC
-    
+   
+ 
 
     
   
@@ -882,39 +715,9 @@ MODULE tcp
     
     ENDPROC
     
-    !Report the force being enacted on the robot
-    PROC report_force()
     
-        !Check if the robot has actual forces to measure
-        IF ROBOS() THEN        
-            force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
-            resp(ValToStr(force_vector));
-            
-           
-            
-        !Otherwise send a set of default values
-        ELSE
-            
-            resp("{-1,-1,-1,-1,-1,-1}");
-        
-        ENDIF
-        
-        
-        
-    ENDPROC
+       
     
-    
-    !Sends the current position and force to the tcp socket 
-    PROC report_pos_and_force()
-        
-        resp(ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)));
-        
-        force_vector := FCGetForce(\Tool:=sph_end_eff);
-        
-        resp(ValToStr(force_vector));
-        
-    
-    ENDPROC
     
     !Report the robots model
     PROC report_model()
@@ -961,91 +764,6 @@ MODULE tcp
     ENDPROC
     
     
-    !Turn force control mode on/off
-    PROC set_force_mode(string mode)
-        
-       !Turn the mode string to a bool
-        VAR bool mode_setting;
-        VAR bool ok;
-        ok := StrToVal(mode, mode_setting);       
-        !Check that it was converted okay
-        IF NOT ok THEN           
-            resp("FAILED TO SWAP");
-            RETURN;
-        ENDIF             
-        
-        !Use the bool to set the fc setting
-        fc_mode := mode_setting;
-        !Send the confirmation message
-        resp("FM:"+ ValToStr(mode_setting));
-    ENDPROC
-    
-    !Set the force control config
-    PROC set_force_cntrl_config(string config)
-        
-        !Define all variables
-        VAR string ax;
-        VAR string targ_string;
-        VAR num targ;
-       
-        VAR bool ok;
-        
-        !Find the dot in the string
-        VAR num sep_pos;
-        sep_pos := StrFind(config, 1, ".");
-        
-        !Split the axes and the target
-        ax := StrPart(config, 1, sep_pos - 1);    
-        targ_string := StrPart(config, sep_pos+1, StrLen(config) - sep_pos);
-        
-        !TpWrite targ_string;
-        
-        !Check that the specified axis is valid
-        TEST ax
-            CASE "X":
-                force_ax := ax;
-            CASE "Z":
-                force_ax := ax;
-            CASE "Y":
-                force_ax := ax;
-            DEFAULT:
-                resp("INVALID AXIS CONFIG");
-                RETURN;            
-        ENDTEST
-        
-        !Cast target value to correct type
-        ok := StrToVal(targ_string, targ);       
-        
-        !Check casting worked
-        IF NOT ok THEN
-            resp("FAILED TO SET CONFIG");
-            RETURN;
-        ENDIF        
-         !Set the variables
-        force_target := targ;
-        
-        !Send back confirmation message
-        resp("FC:" + force_ax + "." + ValToStr(force_target));
-        
-        
-    ENDPROC
-    
-    
-    !Set the force compensation flag and the value
-    PROC set_force_compensation(string comp_val)
-        
-        !Parse the value into the value variable
-        Var bool ok;
-        ok := StrToVal(comp_val, comp_dist);
-        
-        IF ok THEN            
-            !set the compensation flag high
-            fm_compensate := TRUE;            
-            resp("OK");            
-        ELSE
-            resp("FAILED TO CONVERT");        
-        ENDIF   
-     
-    ENDPROC
 
 ENDMODULE
+
