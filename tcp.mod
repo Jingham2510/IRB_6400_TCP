@@ -219,14 +219,14 @@ MODULE tcp
        
         
         !Set the bounds
-        CONST num MAX_X := 650;
-        CONST num MIN_X := -425;
+        CONST num MAX_X := 1400;
+        CONST num MIN_X := 4;
         
-        CONST num MAX_Y := 2650;
-        CONST num MIN_Y := 1350;
+        CONST num MAX_Y := -1600;
+        CONST num MIN_Y := -2250;
         
-        CONST num MAX_Z := 2000;
-        CONST num MIN_Z := 100;
+        CONST num MAX_Z := 1200;
+        CONST num MIN_Z := 850;
         
 
         
