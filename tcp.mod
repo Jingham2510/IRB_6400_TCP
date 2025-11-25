@@ -313,15 +313,9 @@ MODULE tcp
         CASE "TJDN":        
             resp(ValToStr(traj_done));
             
-        
-        !Reports the Torque of every joint
-        CASE "GTTQ":
-            report_torque;
+    
 
-        
-        !Add a relative movement to the rel_move queue
-        CASE "RLAD":
-            force_add_pnt cmd_req;
+     
 
         
         
@@ -736,21 +730,6 @@ MODULE tcp
     ENDPROC
     
     
-    !Reports the robots measured torques
-    PROC report_torque()
-        
-        !TpWrite ValToStr(GetMotorTorque(1));
-        
-        !Send the torques of each joint in a comma seperated format
-        resp("{" + ValToStr(GetMotorTorque(1)) + "," 
-                                            + ValToStr(GetMotorTorque(2)) + ","
-                                            + ValToStr(GetMotorTorque(3)) + ","
-                                            + ValToStr(GetMotorTorque(4)) + ","
-                                            + ValToStr(GetMotorTorque(5)) + ","
-                                            + ValToStr(GetMotorTorque(6)) + "}");
-        
-        
-    ENDPROC
 
     !Procedure to close the sockets
     PROC close_sockets()
