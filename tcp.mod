@@ -16,6 +16,8 @@ MODULE tcp
     
     VAR loaddata test_load := [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0];
     
+    
+    
     VAR fcforcevector force_vector;
     
     
@@ -226,22 +228,26 @@ MODULE tcp
         CONST num MIN_Y := 1350;
         
         CONST num MAX_Z := 2000;
-        CONST num MIN_Z := 100;
+        CONST num MIN_Z := 95;
         
 
         
         !Get the TCPs current position
         VAR robtarget curr_pos;
- 
+        VAR robtarget rob_home_pos; 
         
         curr_pos :=  CRobT();
+        rob_home_pos := [[220.0, 1355.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
         
         !Compare the posiiton with the bounds
         IF curr_pos.trans.x >= MAX_X OR curr_pos.trans.x <= MIN_X OR curr_pos.trans.y >= MAX_Y OR curr_pos.trans.y <= MIN_Y OR curr_pos.trans.Z >= MAX_Z OR curr_pos.trans.Z <= MIN_Z THEN            
                     
             !If it breaches any of the bound rules - emergency stop and stop the program
             StopMove \Quick;            
-            ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -jog back to a start position";
+            ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -moving home";
+            
+            MoveL rob_home_pos, des_speed, fine, tool0;
+            
             Stop \NoRegain;
             
             
