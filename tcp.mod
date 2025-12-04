@@ -63,6 +63,7 @@ MODULE tcp
     VAR bool fm_compensate := FALSE;
     VAR num comp_dist := 0;
 
+    VAR bool vert_force_found := FALSE;
 
     PROC main()      
         
@@ -243,10 +244,12 @@ MODULE tcp
         IF curr_pos.trans.x >= MAX_X OR curr_pos.trans.x <= MIN_X OR curr_pos.trans.y >= MAX_Y OR curr_pos.trans.y <= MIN_Y OR curr_pos.trans.Z >= MAX_Z OR curr_pos.trans.Z <= MIN_Z THEN            
                     
             !If it breaches any of the bound rules - emergency stop and stop the program
-            StopMove \Quick;            
-            ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -moving home";
+            StopMove \Quick; 
             
             MoveL rob_home_pos, des_speed, fine, tool0;
+            ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -moving home";
+            
+            
             
             Stop \NoRegain;
             
@@ -377,7 +380,13 @@ MODULE tcp
         !Set the compensation movement for achieving the desired force
         CASE "FCCM":
             set_force_compensation cmd_req;
+            
+        !Attempt to find vertical force
+        CASE "RQVF":
+            find_vert_force;
         
+        CASE "GTVF":
+            resp(ValToStr(vert_force_found));        
         
         !if unprogrammed/unknown command is sent    
         DEFAULT:
@@ -915,7 +924,7 @@ MODULE tcp
         
         resp(ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)));
         
-        force_vector := FCGetForce(\Tool:=sph_end_eff);
+        force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
         
         resp(ValToStr(force_vector));
         
@@ -1053,5 +1062,77 @@ MODULE tcp
         ENDIF   
      
     ENDPROC
+    
+    
+    !Move down until a vertical force is found
+    PROC find_vert_force()
+        
+        !Distance robot can move in one move
+        VAR num max_move := 0.1;
+        VAR robtarget curr_pos;
+        VAR fcforcevector curr_force_vec;
+        
+        !Reset the vert_force_found flag
+        vert_force_found := FALSE;       
+       
+        resp("going");
+        
+        !Move down and check the current force compared to the desired force 
+        WHILE(NOT vert_force_found) DO
+            
+            !Get current robot position
+            curr_pos := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);
+            
+            !Do a relative move downwards based on the maximum movement
+            IF conc_count < 5 THEN
+                MoveL \conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -max_move), des_speed, fine, sph_end_eff;
+                Incr conc_count;
+            ELSE
+                MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -max_move), des_speed, fine, sph_end_eff;
+                conc_count := 0;
+            ENDIF            
+            
+            curr_force_vec := FcGetForce(\Tool:=sph_end_eff, \ContactForce);
+            
+            !Check the if the vertical force has reached the desired target
+            IF  curr_force_vec.zforce >= force_target THEN                
+                !If so flick the vertical force found high
+                vert_force_found := TRUE;
+            ENDIF
+            
+            
+            
+            !Do a set of cmd handlers so that the computer can request data
+            !FORCE_FOUND
+            SocketReceive client_socket\Str:=receive_string;    
+            cmd_handler receive_string;
+            !POS
+            SocketReceive client_socket\Str:=receive_string;    
+            cmd_handler receive_string;
+            !ORI
+            SocketReceive client_socket\Str:=receive_string;    
+            cmd_handler receive_string;
+            !FORCE
+            SocketReceive client_socket\Str:=receive_string;    
+            cmd_handler receive_string;
+            !ROB_MOV_STATE
+            SocketReceive client_socket\Str:=receive_string;    
+            cmd_handler receive_string;
+            !TRAJ_DONE
+            SocketReceive client_socket\Str:=receive_string;    
+            cmd_handler receive_string;
+            
+                
+        
+        
+                    
+        ENDWHILE
+        
+        
+        
+        
+    ENDPROC
+    
+    
 
 ENDMODULE
