@@ -863,14 +863,13 @@ MODULE tcp
         !Move the tool as described
         !MoveLSync RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool1, "report_pos_and_force";
         
-        MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), des_speed, fine, sph_end_eff;
-        
-        
-           
-        !Get motor moving signal
-        if DOutput(ROB_STATIONARY) <> 1 THEN 
-            TPWrite "MOVING"; 
-        endif
+        IF conc_count < 5 THEN
+            MoveL \conc, RelTool (CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), des_speed, fine, sph_end_eff;
+            Incr conc_count;        
+        ELSE
+            MoveL RelTool (CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), des_speed, fine, sph_end_eff;
+            conc_count := 0;
+        ENDIF
         
 
         resp("MVTL CMPL");
