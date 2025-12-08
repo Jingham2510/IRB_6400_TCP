@@ -243,10 +243,15 @@ MODULE tcp
         !Compare the posiiton with the bounds
         IF curr_pos.trans.x >= MAX_X OR curr_pos.trans.x <= MIN_X OR curr_pos.trans.y >= MAX_Y OR curr_pos.trans.y <= MIN_Y OR curr_pos.trans.Z >= MAX_Z OR curr_pos.trans.Z <= MIN_Z THEN            
                     
+            
+            
+            des_speed := [50, 500, 5000, 1000];
+            
+            
             !If it breaches any of the bound rules - emergency stop and stop the program
+            MoveL rob_home_pos, des_speed, fine, tool0;
             StopMove \Quick; 
             
-            MoveL rob_home_pos, des_speed, fine, tool0;
             ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -moving home";
             
             
@@ -1067,7 +1072,7 @@ MODULE tcp
     PROC find_vert_force()
         
         !Distance robot can move in one move
-        VAR num max_move := 1;
+        VAR num max_move := 0.1;
         VAR robtarget curr_pos;
         VAR fcforcevector curr_force_vec;
         
@@ -1087,17 +1092,17 @@ MODULE tcp
             
             !Do a relative move downwards based on the maximum movement
             IF conc_count < 5 THEN
-                MoveL \conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, max_move), des_speed, fine, sph_end_eff;
+                MoveL \conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -max_move), des_speed, fine, sph_end_eff;
                 Incr conc_count;
             ELSE
-                MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, max_move), des_speed, fine, sph_end_eff;
+                MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -max_move), des_speed, fine, sph_end_eff;
                 conc_count := 0;
             ENDIF            
             
             curr_force_vec := FcGetForce(\Tool:=sph_end_eff, \ContactForce);
             
-            !Check the if the vertical force has reached the desired target (negative force is upwards pressure)
-            IF  curr_force_vec.zforce <= force_target THEN                
+            !Check the if the vertical force has reached the desired target
+            IF  curr_force_vec.zforce >= force_target THEN                
                 !If so flick the vertical force found high
                 vert_force_found := TRUE;
             ENDIF
