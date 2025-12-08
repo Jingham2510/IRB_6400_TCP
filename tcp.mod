@@ -222,11 +222,11 @@ MODULE tcp
        
         
         !Set the bounds
-        CONST num MAX_X := 650;
+        CONST num MAX_X := 800;
         CONST num MIN_X := -425;
         
         CONST num MAX_Y := 2650;
-        CONST num MIN_Y := 1350;
+        CONST num MIN_Y := 1300;
         
         CONST num MAX_Z := 2000;
         CONST num MIN_Z := 95;
@@ -845,15 +845,15 @@ MODULE tcp
             
             !sort the variables
             IF i = 0 THEN    
-               TpWrite("X: " + curr_num);
+               !TpWrite("X: " + curr_num);
                ok := StrToVal(curr_num, dX);   
             ELSEIF i = 1 THEN       
-                TpWrite("Y: " + curr_num);
+                !TpWrite("Y: " + curr_num);
                 ok := StrToVal(curr_num, dY);
             ELSEIF i = 2 THEN
                 !Special formatting to ignore square bracket
                 curr_num := StrPart(dists, start_char + 1, StrLen(dists) - start_char - 1);   
-                TpWrite("Z: " + curr_num);
+                !TpWrite("Z: " + curr_num);
                 ok := StrToVal(curr_num, dZ);
             ENDIF
             
