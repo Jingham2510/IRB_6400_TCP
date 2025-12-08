@@ -1067,7 +1067,7 @@ MODULE tcp
     PROC find_vert_force()
         
         !Distance robot can move in one move
-        VAR num max_move := 0.1;
+        VAR num max_move := 1;
         VAR robtarget curr_pos;
         VAR fcforcevector curr_force_vec;
         
@@ -1087,10 +1087,10 @@ MODULE tcp
             
             !Do a relative move downwards based on the maximum movement
             IF conc_count < 5 THEN
-                MoveL \conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -max_move), des_speed, fine, sph_end_eff;
+                MoveL \conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, max_move), des_speed, fine, sph_end_eff;
                 Incr conc_count;
             ELSE
-                MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -max_move), des_speed, fine, sph_end_eff;
+                MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, max_move), des_speed, fine, sph_end_eff;
                 conc_count := 0;
             ENDIF            
             
