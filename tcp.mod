@@ -1071,6 +1071,9 @@ MODULE tcp
         VAR robtarget curr_pos;
         VAR fcforcevector curr_force_vec;
         
+    
+        in_bounds_check;
+        
         !Reset the vert_force_found flag
         vert_force_found := FALSE;       
        
