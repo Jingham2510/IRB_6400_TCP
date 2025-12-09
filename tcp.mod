@@ -197,7 +197,7 @@ MODULE tcp
         VAR robtarget rob_home_pos; 
         
         curr_pos :=  CRobT();
-        rob_home_pos := [[220.0, 1355.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
+        rob_home_pos := [[220.0, 1400.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
         
         MoveL rob_home_pos, des_speed, fine, tool0;
     ENDPROC
@@ -253,6 +253,8 @@ MODULE tcp
         
         !Get the TCPs current position
         VAR robtarget curr_pos;
+        
+        curr_pos:= CRobT();
         
         !Compare the posiiton with the bounds
         IF curr_pos.trans.x >= MAX_X OR curr_pos.trans.x <= MIN_X OR curr_pos.trans.y >= MAX_Y OR curr_pos.trans.y <= MIN_Y OR curr_pos.trans.Z >= MAX_Z OR curr_pos.trans.Z <= MIN_Z THEN            
