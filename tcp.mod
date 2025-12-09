@@ -892,6 +892,7 @@ MODULE tcp
             conc_count := 0;
         ENDIF
         
+        in_bounds_check;
 
         resp("MVTL CMPL");
         
