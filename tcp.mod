@@ -72,6 +72,11 @@ MODULE tcp
 
         SetDo move_started, 0;
         
+        IF TRUE THEN
+           go_home;
+           
+        ENDIF
+        
         !Checks if force calibraiton is required or not
         !Not required for the virtual controller
         IF ROBOS() AND (NOT fc_cal) THEN                
@@ -184,6 +189,19 @@ MODULE tcp
     
 
     ENDPROC
+    
+    !Testing function only
+    PROC go_home()
+         !Get the TCPs current position
+        VAR robtarget curr_pos;
+        VAR robtarget rob_home_pos; 
+        
+        curr_pos :=  CRobT();
+        rob_home_pos := [[220.0, 1355.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
+        
+        MoveL rob_home_pos, des_speed, fine, tool0;
+    ENDPROC
+    
     
     !Convenience wrapper
     PROC resp(string msg)        
