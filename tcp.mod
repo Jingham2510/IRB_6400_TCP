@@ -72,6 +72,11 @@ MODULE tcp
 
         SetDo move_started, 0;
         
+        IF TRUE THEN
+           go_home;
+           
+        ENDIF
+        
         !Checks if force calibraiton is required or not
         !Not required for the virtual controller
         IF ROBOS() AND (NOT fc_cal) THEN                
@@ -185,6 +190,19 @@ MODULE tcp
 
     ENDPROC
     
+    !Testing function only
+    PROC go_home()
+         !Get the TCPs current position
+        VAR robtarget curr_pos;
+        VAR robtarget rob_home_pos; 
+        
+        curr_pos :=  CRobT();
+        rob_home_pos := [[220.0, 1400.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
+        
+        MoveL rob_home_pos, des_speed, fine, tool0;
+    ENDPROC
+    
+    
     !Convenience wrapper
     PROC resp(string msg)        
         SocketSend client_socket\Str:= msg + "!";       
@@ -222,11 +240,11 @@ MODULE tcp
        
         
         !Set the bounds
-        CONST num MAX_X := 650;
+        CONST num MAX_X := 800;
         CONST num MIN_X := -425;
         
         CONST num MAX_Y := 2650;
-        CONST num MIN_Y := 1350;
+        CONST num MIN_Y := 1300;
         
         CONST num MAX_Z := 2000;
         CONST num MIN_Z := 95;
@@ -235,10 +253,8 @@ MODULE tcp
         
         !Get the TCPs current position
         VAR robtarget curr_pos;
-        VAR robtarget rob_home_pos; 
         
-        curr_pos :=  CRobT();
-        rob_home_pos := [[220.0, 1355.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
+        curr_pos:= CRobT();
         
         !Compare the posiiton with the bounds
         IF curr_pos.trans.x >= MAX_X OR curr_pos.trans.x <= MIN_X OR curr_pos.trans.y >= MAX_Y OR curr_pos.trans.y <= MIN_Y OR curr_pos.trans.Z >= MAX_Z OR curr_pos.trans.Z <= MIN_Z THEN            
@@ -249,7 +265,7 @@ MODULE tcp
             
             
             !If it breaches any of the bound rules - emergency stop and stop the program
-            MoveL rob_home_pos, des_speed, fine, tool0;
+            go_home;
             StopMove \Quick; 
             
             ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -moving home";
@@ -876,6 +892,7 @@ MODULE tcp
             conc_count := 0;
         ENDIF
         
+        in_bounds_check;
 
         resp("MVTL CMPL");
         
