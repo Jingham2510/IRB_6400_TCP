@@ -1102,7 +1102,7 @@ MODULE tcp
             curr_force_vec := FcGetForce(\Tool:=sph_end_eff, \ContactForce);
             
             !Check the if the vertical force has reached the desired target
-            IF  curr_force_vec.zforce <= abs(force_target) THEN                
+            IF  curr_force_vec.zforce <= force_target THEN                
                 !If so flick the vertical force found high
                 vert_force_found := TRUE;
             ENDIF
