@@ -731,6 +731,11 @@ MODULE tcp
         
         !Calculate the horizontal distance to the target
         hori_distance := sqrt(pow(x_dist, 2) + pow(y_dist, 2));
+        !For now ignore 0 movements
+        IF(hori_distance = 0) THEN
+            RETURN 0;
+        ENDIF
+        
         !Calculate the time estimated to travel this distance (all in mm, assume horizontal speed >> vertical speed)
         time_est := hori_distance/des_speed_num;
         
