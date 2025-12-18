@@ -62,7 +62,9 @@ MODULE tcp
     !Force compensation values
     VAR bool fm_compensate := FALSE;
     VAR num comp_dist := 0;
-
+    VAR num desired_z_speed := 0;
+    
+    
     VAR bool vert_force_found := FALSE;
 
     PROC main()      
@@ -71,11 +73,6 @@ MODULE tcp
 
 
         SetDo move_started, 0;
-        
-        IF TRUE THEN
-           go_home;
-           
-        ENDIF
         
         !Checks if force calibraiton is required or not
         !Not required for the virtual controller
@@ -190,19 +187,6 @@ MODULE tcp
 
     ENDPROC
     
-    !Testing function only
-    PROC go_home()
-         !Get the TCPs current position
-        VAR robtarget curr_pos;
-        VAR robtarget rob_home_pos; 
-        
-        curr_pos :=  CRobT();
-        rob_home_pos := [[220.0, 1400.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
-        
-        MoveL rob_home_pos, des_speed, fine, tool0;
-    ENDPROC
-    
-    
     !Convenience wrapper
     PROC resp(string msg)        
         SocketSend client_socket\Str:= msg + "!";       
@@ -240,11 +224,11 @@ MODULE tcp
        
         
         !Set the bounds
-        CONST num MAX_X := 800;
+        CONST num MAX_X := 650;
         CONST num MIN_X := -425;
         
         CONST num MAX_Y := 2650;
-        CONST num MIN_Y := 1300;
+        CONST num MIN_Y := 1350;
         
         CONST num MAX_Z := 2000;
         CONST num MIN_Z := 95;
@@ -253,8 +237,10 @@ MODULE tcp
         
         !Get the TCPs current position
         VAR robtarget curr_pos;
+        VAR robtarget rob_home_pos; 
         
-        curr_pos:= CRobT();
+        curr_pos :=  CRobT();
+        rob_home_pos := [[220.0, 1355.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
         
         !Compare the posiiton with the bounds
         IF curr_pos.trans.x >= MAX_X OR curr_pos.trans.x <= MIN_X OR curr_pos.trans.y >= MAX_Y OR curr_pos.trans.y <= MIN_Y OR curr_pos.trans.Z >= MAX_Z OR curr_pos.trans.Z <= MIN_Z THEN            
@@ -265,7 +251,7 @@ MODULE tcp
             
             
             !If it breaches any of the bound rules - emergency stop and stop the program
-            go_home;
+            MoveL rob_home_pos, des_speed, fine, tool0;
             StopMove \Quick; 
             
             ErrWrite "POS BOUND BREACH", "Outside of the acceptable bounds -moving home";
@@ -379,8 +365,7 @@ MODULE tcp
             
         !Reports whether the trajectory queue has reached the end
         CASE "TJDN":        
-            resp(ValToStr(traj_done));
-            
+            resp(ValToStr(traj_done));            
         
         !Reports the Torque of every joint
         CASE "GTTQ":
@@ -401,6 +386,10 @@ MODULE tcp
         !Set the compensation movement for achieving the desired force
         CASE "FCCM":
             set_force_compensation cmd_req;
+        
+        !Set the desired z speed to achieve the desired force
+        CASE "FCCS":
+            set_desired_z_height cmd_req;
             
         !Attempt to find vertical force
         CASE "RQVF":
@@ -670,9 +659,14 @@ MODULE tcp
         !Check to see if the movement should compensate
         IF fm_compensate THEN
         
-            IF force_ax = "Z" THEN
-                rel_move{3} := rel_move{3} + comp_dist;
-            ENDIF
+            !IF force_ax = "Z" THEN
+            !    rel_move{3} := rel_move{3} + comp_dist;
+            !ENDIF
+            
+            
+            !Calculate the relative movement to achieve the desired z speed
+            rel_move{3} := calc_req_z_height(rel_move{1}, rel_move{2});
+            
             
             !Turn off the compensation
             fm_compensate := FALSE;
@@ -713,6 +707,23 @@ MODULE tcp
     ENDPROC
     
 
+    !Calculates the z height to move, to achieve a desired z speed
+    FUNC num calc_req_z_height(num x_dist, num y_dist)
+        
+        
+        VAR num hori_distance;
+        VAR num time_est;
+        
+        
+        !Calculate the horizontal distance to the target
+        hori_distance := sqrt(pow(x_dist, 2) + pow(y_dist, 2));
+        !Calculate the time estimated to travel this distance (all in mm, assume horizontal speed >> vertical speed)
+        time_est := hori_distance/des_speed_num;
+        
+        !Calculate the desired z height
+        RETURN desired_z_speed/time_est;
+        
+    ENDFUNC
     
   
     
@@ -892,7 +903,6 @@ MODULE tcp
             conc_count := 0;
         ENDIF
         
-        in_bounds_check;
 
         resp("MVTL CMPL");
         
@@ -1082,6 +1092,22 @@ MODULE tcp
             resp("FAILED TO CONVERT");        
         ENDIF   
      
+    ENDPROC
+    
+    PROC set_desired_z_speed(string des_val)
+        
+        !Parse the value into a number
+        VAR bool ok;
+        ok := StrToVal(des_val, desired_z_speed);
+         
+        IF ok THEN            
+            !set the compensation flag high
+            fm_compensate := TRUE;            
+            resp("OK");            
+        ELSE
+            resp("FAILED TO CONVERT");        
+        ENDIF 
+        
     ENDPROC
     
     
