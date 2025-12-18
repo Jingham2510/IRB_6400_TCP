@@ -389,7 +389,7 @@ MODULE tcp
         
         !Set the desired z speed to achieve the desired force
         CASE "FCCS":
-            set_desired_z_height cmd_req;
+            set_desired_z_speed cmd_req;
             
         !Attempt to find vertical force
         CASE "RQVF":
