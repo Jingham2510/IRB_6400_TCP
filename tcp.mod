@@ -61,6 +61,7 @@ MODULE tcp
     
     !Force compensation values
     VAR bool fm_compensate := FALSE;
+    VAR bool fs_compensate :=FALSE;
     VAR num comp_dist := 0;
     VAR num desired_z_speed := 0;
     
@@ -673,19 +674,26 @@ MODULE tcp
         !Check to see if the movement should compensate
         IF fm_compensate THEN
         
-            !IF force_ax = "Z" THEN
-            !    rel_move{3} := rel_move{3} + comp_dist;
-            !ENDIF
-            
-            
-            !Calculate the relative movement to achieve the desired z speed
-            rel_move{3} := calc_req_z_height(rel_move{1}, rel_move{2});
-            
+            IF force_ax = "Z" THEN
+                rel_move{3} := rel_move{3} + comp_dist;
+            ENDIF           
             
             !Turn off the compensation
             fm_compensate := FALSE;
             
         ENDIF
+        
+        IF fs_compensate THEN
+            
+            IF force_ax = "Z" THEN
+                !Calculate the relative movement to achieve the desired z speed
+                rel_move{3} := calc_req_z_height(rel_move{1}, rel_move{2});
+            ENDIF
+            
+            fs_compensate := FALSE;
+            
+        ENDIF
+            
          
         
         !Check that the concurrent movements haven't been reached
@@ -1121,7 +1129,7 @@ MODULE tcp
          
         IF ok THEN            
             !set the compensation flag high
-            fm_compensate := TRUE;            
+            fs_compensate := TRUE;            
             resp("OK");            
         ELSE
             resp("FAILED TO CONVERT");        
