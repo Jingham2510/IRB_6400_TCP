@@ -801,7 +801,7 @@ MODULE tcp
 
         !get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=tool0 \WObj:=wobj0); 
+        curr_trgt := CRobT(\Tool:=sph_end_eff \WObj:=wobj0); 
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(ori,rob_trgt.rot);
@@ -1213,3 +1213,4 @@ MODULE tcp
     
 
 ENDMODULE
+
