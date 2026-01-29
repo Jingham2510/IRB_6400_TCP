@@ -920,7 +920,7 @@ MODULE tcp
         
         
         !Move the tool as described
-        !MoveLSync RelTool( CRobT(\Tool:=tool1 \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, tool1, "report_pos_and_force";
+        !MoveLSync RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, sph_end_eff, "report_pos_and_force";
         
         IF conc_count < 5 THEN
             MoveL \conc, RelTool (CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), des_speed, fine, sph_end_eff;
@@ -1162,10 +1162,10 @@ MODULE tcp
             
             !Do a relative move downwards based on the maximum movement
             IF conc_count < 5 THEN
-                MoveL \conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -max_move), des_speed, fine, sph_end_eff;
+                MoveL \conc, RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, max_move), des_speed, fine, sph_end_eff;
                 Incr conc_count;
             ELSE
-                MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -max_move), des_speed, fine, sph_end_eff;
+                MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, max_move), des_speed, fine, sph_end_eff;
                 conc_count := 0;
             ENDIF            
             
@@ -1213,4 +1213,3 @@ MODULE tcp
     
 
 ENDMODULE
-
