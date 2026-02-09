@@ -825,37 +825,50 @@ MODULE tcp
             resp("INVALID ORI");
         ENDIF
     ENDPROC
+
     
     !Moves the robot to a set position via target joint angles
     PROC set_jnt(string target_jnts)
         !Declare the joint target
         VAR jointtarget jnt_trgt;
         VAR bool ok;
-        
+
         TpWrite(ValToStr(target_jnts));
 
-        
-        !Convert the string into the joint targets
-        ok := StrToVal(target_jnts, jnt_trgt);
 
-        
+        !Convert the string into the joint targets
+        ok:=StrToVal(target_jnts,jnt_trgt);
+
+
         IF ok THEN
-            
+
+
             TPWrite ValToStr(jnt_trgt);
-            
-            MoveAbsJ jnt_trgt, des_speed, fine, sph_end_eff;
-            
+
+            IF conc_count<5 THEN
+
+                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=0.001 ,fine, sph_end_eff;
+
+                conc_count:=conc_count+1;
+
+            ELSE
+                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=0.001,fine,sph_end_eff;
+
+            ENDIF
+
+
             !Let the client know the move happened
             resp("STJT CMPL");
-        
+
         ELSE
             !If something breaks
             TPWrite "Invalid target joints";
             resp("INVALID ANGLES");
-            
+
         ENDIF
 
     ENDPROC
+
     
     PROC set_speed(string speed)
         
@@ -1213,3 +1226,4 @@ MODULE tcp
     
 
 ENDMODULE
+
