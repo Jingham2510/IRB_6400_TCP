@@ -827,17 +827,17 @@ MODULE tcp
     ENDPROC
 
     
-    !Moves the robot to a set position via target joint angles
+   !Moves the robot to a set position via target joint angles
     PROC set_jnt(string target_jnts)
         !Declare the joint target
         VAR jointtarget jnt_trgt;
         VAR bool ok;
 
-        TpWrite(ValToStr(target_jnts));
+        !TpWrite(ValToStr(target_jnts));
 
 
         !Convert the string into the joint targets
-        ok:=StrToVal(target_jnts,jnt_trgt);
+        ok:=StrToVal(target_jnts,jnt_trgt.robax);
 
 
         IF ok THEN
@@ -858,7 +858,7 @@ MODULE tcp
 
 
             !Let the client know the move happened
-            resp("STJT CMPL");
+            !resp("STJT CMPL");
 
         ELSE
             !If something breaks
@@ -1226,4 +1226,5 @@ MODULE tcp
     
 
 ENDMODULE
+
 
