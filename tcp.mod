@@ -73,6 +73,10 @@ MODULE tcp
     
     !EGM DATA
     VAR egmident egmID;
+    VAR bool egm_running := FALSE;
+    
+    VAR pose posecor:= [[0,0,0],[0,0,0,0]];
+    VAR pose posesense:=[[0,0,0],[0,0,0,0]];
 
     PROC main()      
         
@@ -126,6 +130,12 @@ MODULE tcp
 
         ! Waiting for a connection request
         WHILE TRUE DO
+            
+            !While the egm is being streamed - run to all of the positions
+            WHILE egm_running DO
+                EGMRunPose egmID, EGM_STOP_HOLD, \x, \y, \z;
+                
+            ENDWHILE
             
             !if the real robot - check in bounds
             IF RobOS() THEN            
@@ -422,6 +432,15 @@ MODULE tcp
         !Connects the EGM server in cartesian pose mode
         CASE "EGPS":
             EGM_connect_pose;
+            
+            
+        !Starts an EGM stream:
+        CASE "EGST":
+            EGM_start_stream;
+            
+        CASE "EGSP":
+            EGM_stop_stream;
+            
         !if unprogrammed/unknown command is sent    
         DEFAULT:
             TPWrite "INVALID CMD: " + cmd_ID;
@@ -1246,9 +1265,27 @@ MODULE tcp
         ENDIF        
           
         
-        TPWrite "UDP Connected!";       
+        EGMActPose egmID, \Tool:=sph_end_eff, posecor,EGM_FRAME_BASE,posesense, EGM_FRAME_TOOL, \MaxSpeedDeviation:= 50;
+        
+        TPWrite "UDP Connected!";   
+        
+    ENDPROC
+    
+    PROC EGM_start_stream()
+        EGMStreamStart egmID;
+        resp("Stream started");        
+        
+        egm_running := TRUE;
         
         
+        
+    ENDPROC
+    
+    PROC EGM_stop_stream()
+        EGMStreamStop egmID;
+        resp("Stream stopped");
+        
+        egm_running := FALSE;
     ENDPROC
     
 
