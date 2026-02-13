@@ -66,7 +66,13 @@ MODULE tcp
     VAR num desired_z_speed := 0;
     
     
+    !Used during phase 1 of the geo loading
     VAR bool vert_force_found := FALSE;
+    
+    
+    
+    !EGM DATA
+    VAR egmident egmID;
 
     PROC main()      
         
@@ -411,8 +417,11 @@ MODULE tcp
             find_vert_force;
         
         CASE "GTVF":
-            resp(ValToStr(vert_force_found));        
-        
+            resp(ValToStr(vert_force_found)); 
+            
+        !Connects the EGM server in cartesian pose mode
+        CASE "EGPS":
+            EGM_connect_pose;
         !if unprogrammed/unknown command is sent    
         DEFAULT:
             TPWrite "INVALID CMD: " + cmd_ID;
@@ -1214,17 +1223,34 @@ MODULE tcp
             
                 
         
-        
-                    
         ENDWHILE
-        
-        
-        
         
     ENDPROC
     
     
+    !Connects to the EGM host server  setup for xyz cartesian control
+    PROC EGM_connect_pose() 
+        
+        
+        resp("opening UDP");
+        
+        !Get the ID to control the EGM connection
+        EGMGetId egmID;
+        
+        IF RobOs() THEN
+            
+            EGMSetupUC ROB_1, egmID, "default", "RemoteUcDev", \pose, \CommTimeout:=100000;     
+        ELSE
+            
+             EGMSetupUC ROB_1, egmID, "default", "LocalUcDev", \pose, \CommTimeout:=100000;     
+        ENDIF        
+          
+        
+        TPWrite "UDP Connected!";       
+        
+        
+    ENDPROC
+    
 
 ENDMODULE
-
 
