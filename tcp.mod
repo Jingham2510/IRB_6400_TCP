@@ -73,17 +73,22 @@ MODULE tcp
     
     !EGM DATA
     VAR egmident egmID;
+    VAR egmstate egm_state;
     VAR bool egm_running := FALSE;
     
-    VAR pose posecor:= [[0,0,0],[0,0,0,0]];
+    VAR pose posecor:= [[0,0,0],[1,0,0,0]];
     VAR pose posesense:=[[0,0,0],[0,0,0,0]];
+    
+    CONST egm_minmax egm_minmax_lin:=[-0.5,+0.5];
+    CONST egm_minmax egm_minmax_rot:=[-0.5,+0.5];
 
     PROC main()      
         
 
-
-
         SetDo move_started, 0;
+        
+        
+    
         
         IF TRUE THEN
            go_home;
@@ -134,7 +139,7 @@ MODULE tcp
             !While the egm is being streamed - run to all of the positions
             WHILE egm_running DO
                 EGMRunPose egmID, EGM_STOP_HOLD, \x, \y, \z;
-                
+                            
             ENDWHILE
             
             !if the real robot - check in bounds
@@ -213,7 +218,6 @@ MODULE tcp
         rob_home_pos := [[220.0, 1355.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
 
         MoveL rob_home_pos, des_speed, fine, tool0;
-
 
     ENDPROC
 
@@ -1253,6 +1257,9 @@ MODULE tcp
         
         resp("opening UDP");
         
+        !Reset the EGM ID just incase
+        EgmReset egmID;
+        
         !Get the ID to control the EGM connection
         EGMGetId egmID;
         
@@ -1265,7 +1272,9 @@ MODULE tcp
         ENDIF        
           
         
-        EGMActPose egmID, \Tool:=sph_end_eff, posecor,EGM_FRAME_BASE,posesense, EGM_FRAME_TOOL, \MaxSpeedDeviation:= 50;
+        EGMActPose egmID, \Tool:=sph_end_eff, posecor,EGM_FRAME_WOBJ, posecor, EGM_FRAME_WOBJ,
+            \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
+            \MaxSpeedDeviation:= 300;
         
         TPWrite "UDP Connected!";   
         
