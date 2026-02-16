@@ -75,9 +75,10 @@ MODULE tcp
     VAR egmident egmID;
     VAR egmstate egm_state;
     VAR bool egm_running := FALSE;
+    VAR bool egm_speed := FALSE;
     
     VAR pose posecor:= [[0,0,0],[1,0,0,0]];
-    VAR pose posesense:=[[0,0,0],[0,0,0,0]];
+    VAR pose posesense:=[[0,0,0],[1,0,0,0]];
     
     CONST egm_minmax egm_minmax_lin:=[-0.5,+0.5];
     CONST egm_minmax egm_minmax_rot:=[-0.5,+0.5];
@@ -138,7 +139,19 @@ MODULE tcp
             
             !While the egm is being streamed - run to all of the positions
             WHILE egm_running DO
-                EGMRunPose egmID, EGM_STOP_HOLD, \x, \y, \z;
+                
+                IF egm_speed THEN                 
+                    EGMRunPose egmID, EGM_STOP_HOLD, 
+                        \x, \y, \z,
+                        \Rx, \Ry, \Rz
+                        \PosCorrGain:= 0;
+                ELSE
+                    EGMRunPose egmID, EGM_STOP_HOLD, 
+                        \x, \y, \z,
+                        \Rx, \Ry, \Rz
+                        \PosCorrGain:= 1;
+                    
+                ENDIF
                             
             ENDWHILE
             
@@ -438,10 +451,16 @@ MODULE tcp
             EGM_connect_pose;
             
             
-        !Starts an EGM stream:
-        CASE "EGST":
-            EGM_start_stream;
+        !Starts an EGM stream in speed control mode
+        CASE "EGSS":
+            EGM_start_stream_speed;
             
+         !Starts an EGM stream in position control mode
+        CASE "EGST":
+            EGM_start_stream_pos;
+            
+            
+        !Stops the EGM stream    
         CASE "EGSP":
             EGM_stop_stream;
             
@@ -1272,20 +1291,30 @@ MODULE tcp
         ENDIF        
           
         
-        EGMActPose egmID, \Tool:=sph_end_eff, posecor,EGM_FRAME_WOBJ, posecor, EGM_FRAME_WOBJ,
+        EGMActPose egmID, \Tool:=sph_end_eff, \Wobj:= wobj0,posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
             \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
-            \MaxSpeedDeviation:= 300;
+            \MaxSpeedDeviation:= 50;
         
         TPWrite "UDP Connected!";   
         
     ENDPROC
     
-    PROC EGM_start_stream()
+    PROC EGM_start_stream_speed()
         EGMStreamStart egmID;
-        resp("Stream started");        
+        resp("Stream started");       
         
         egm_running := TRUE;
+        egm_speed := TRUE;
         
+        
+    ENDPROC
+    
+        PROC EGM_start_stream_pos()
+        EGMStreamStart egmID;
+        resp("Stream started");       
+        
+        egm_running := TRUE;
+        egm_speed := FALSE;
         
         
     ENDPROC
