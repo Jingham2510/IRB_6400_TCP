@@ -76,13 +76,14 @@ MODULE tcp
     VAR egmstate egm_state;
     VAR bool egm_running := FALSE;
     VAR bool egm_speed := FALSE;
+    VAR bool egm_pose := FALSE;
     
     VAR pose posecor:= [[0,0,0],[1,0,0,0]];
     VAR pose posesense:=[[0,0,0],[1,0,0,0]];
     
-    CONST egm_minmax egm_minmax_lin:=[-0.5,+0.5];
-    CONST egm_minmax egm_minmax_rot:=[-0.5,+0.5];
-
+    CONST egm_minmax egm_minmax_lin:=[-0.1,+0.1];
+    CONST egm_minmax egm_minmax_rot:=[-0.1,+0.1];
+    
     PROC main()      
         
 
@@ -140,16 +141,36 @@ MODULE tcp
             !While the egm is being streamed - run to all of the positions
             WHILE egm_running DO
                 
-                IF egm_speed THEN                 
-                    EGMRunPose egmID, EGM_STOP_HOLD, 
-                        \x, \y, \z,
-                        \Rx, \Ry, \Rz
-                        \PosCorrGain:= 0;
+                !EGM pose mode
+                IF egm_pose THEN
+                   IF egm_speed THEN                 
+                        EGMRunPose egmID, EGM_STOP_HOLD, 
+                            \x, \y, \z,
+                            \PosCorrGain:= 0;
+                    ELSE
+                        EGMRunPose egmID, EGM_STOP_HOLD, 
+                            \x, \y, \z,
+                            \PosCorrGain:= 1;                    
+                    ENDIF
+                !EGM joint mode  
                 ELSE
-                    EGMRunPose egmID, EGM_STOP_HOLD, 
-                        \x, \y, \z,
-                        \Rx, \Ry, \Rz
-                        \PosCorrGain:= 1;
+                    IF egm_speed THEN
+                        EGMRunJoint EGMid, EGM_STOP_HOLD,
+                            \J1, \J2, \J3, \J4, \J5, \J6 
+                            \PosCorrGain := 0;   
+                    ELSE
+                        EGMRunJoint EGMid, EGM_STOP_HOLD,
+                            \J1, \J2, \J3, \J4, \J5, \J6 
+                            \PosCorrGain := 1;
+                    ENDIF
+                ENDIF
+                
+                !Get the EGM state
+                egm_state := EgmGetState(egmID);
+                
+                
+                !if disconnected break from the while loop
+                IF egm_state = EGM_STATE_DISCONNECTED THEN
                     
                 ENDIF
                             
@@ -450,6 +471,9 @@ MODULE tcp
         CASE "EGPS":
             EGM_connect_pose;
             
+        !Connects the EGM server in joint mode
+        CASE "EGJT":
+            EGM_connect_joint;            
             
         !Starts an EGM stream in speed control mode
         CASE "EGSS":
@@ -1273,6 +1297,39 @@ MODULE tcp
     !Connects to the EGM host server  setup for xyz cartesian control
     PROC EGM_connect_pose() 
         
+        resp("opening UDP");
+        
+        !Reset the EGM ID just incase
+        EgmReset egmID;
+        
+        !Get the ID to control the EGM connection
+        EGMGetId egmID;
+        
+        IF RobOs() THEN
+            
+            EGMSetupUC ROB_1, egmID, "default", "RemoteUcDev", \Pose, \CommTimeout:=100000;     
+        ELSE
+            
+             EGMSetupUC ROB_1, egmID, "default", "LocalUcDev", \Pose, \CommTimeout:=100000;     
+        ENDIF        
+          
+        
+        EGMActPose egmID, \Tool:= sph_end_eff, \WObj:= wobj0,posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
+            \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
+            \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
+            \MaxSpeedDeviation:= 50;
+            
+            
+        egm_pose := TRUE;
+        
+        TPWrite "UDP (pose mode) Connected!";   
+        
+    ENDPROC
+    
+    
+    
+    !Connects to the EGM host server  setup for xyz cartesian control
+    PROC EGM_connect_joint() 
         
         resp("opening UDP");
         
@@ -1284,24 +1341,26 @@ MODULE tcp
         
         IF RobOs() THEN
             
-            EGMSetupUC ROB_1, egmID, "default", "RemoteUcDev", \pose, \CommTimeout:=100000;     
+            EGMSetupUC ROB_1, egmID, "default", "RemoteUcDev", \Joint, \CommTimeout:=100000;     
         ELSE
             
-             EGMSetupUC ROB_1, egmID, "default", "LocalUcDev", \pose, \CommTimeout:=100000;     
+             EGMSetupUC ROB_1, egmID, "default", "LocalUcDev", \Joint, \CommTimeout:=100000;     
         ENDIF        
+        
+        !Enable the joint
+        EGMActJoint egmID \MaxSpeedDeviation:= 50;
           
+        egm_pose := FALSE;
         
-        EGMActPose egmID, \Tool:=sph_end_eff, \Wobj:= wobj0,posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
-            \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
-            \MaxSpeedDeviation:= 50;
-        
-        TPWrite "UDP Connected!";   
+        TPWrite "UDP (joint mode) Connected!";   
         
     ENDPROC
     
+    
+    
     PROC EGM_start_stream_speed()
         EGMStreamStart egmID;
-        resp("Stream started");       
+        resp("Stream started");     
         
         egm_running := TRUE;
         egm_speed := TRUE;
@@ -1311,11 +1370,9 @@ MODULE tcp
     
         PROC EGM_start_stream_pos()
         EGMStreamStart egmID;
-        resp("Stream started");       
-        
+        resp("Stream started");               
         egm_running := TRUE;
-        egm_speed := FALSE;
-        
+        egm_speed := FALSE;        
         
     ENDPROC
     
