@@ -144,21 +144,40 @@ MODULE tcp
                 !EGM pose mode
                 IF egm_pose THEN
                    IF egm_speed THEN                 
+                              
+                        EGMActPose egmID, \Tool:= sph_end_eff, posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
+                        \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
+                        \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
+                        \MaxSpeedDeviation:= 50;
+                        
                         EGMRunPose egmID, EGM_STOP_HOLD, 
                             \x, \y, \z,
                             \PosCorrGain:= 0;
                     ELSE
+                        
+                           
+                        EGMActPose egmID, \Tool:= sph_end_eff, posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
+                        \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
+                        \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
+                        \MaxSpeedDeviation:= 50;
+                        
                         EGMRunPose egmID, EGM_STOP_HOLD, 
                             \x, \y, \z,
-                            \PosCorrGain:= 1;                    
+                            \PosCorrGain:= 1;           
+                     
+            
                     ENDIF
                 !EGM joint mode  
                 ELSE
                     IF egm_speed THEN
+                        EGMActJoint egmID \MaxSpeedDeviation:= 50;
+                        
                         EGMRunJoint EGMid, EGM_STOP_HOLD,
                             \J1, \J2, \J3, \J4, \J5, \J6 
                             \PosCorrGain := 0;   
                     ELSE
+                        EGMActJoint egmID \MaxSpeedDeviation:= 50;
+                        
                         EGMRunJoint EGMid, EGM_STOP_HOLD,
                             \J1, \J2, \J3, \J4, \J5, \J6 
                             \PosCorrGain := 1;
@@ -171,7 +190,8 @@ MODULE tcp
                 
                 !if disconnected break from the while loop
                 IF egm_state = EGM_STATE_DISCONNECTED THEN
-                    
+                    EGMStop egmID, EGM_STOP_HOLD;
+                    egm_running := FALSE;
                 ENDIF
                             
             ENDWHILE
@@ -1314,7 +1334,7 @@ MODULE tcp
         ENDIF        
           
         
-        EGMActPose egmID, \Tool:= sph_end_eff, \WObj:= wobj0,posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
+        EGMActPose egmID, \Tool:= sph_end_eff, posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
             \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
             \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
             \MaxSpeedDeviation:= 50;
@@ -1366,6 +1386,7 @@ MODULE tcp
         egm_speed := TRUE;
         
         
+        
     ENDPROC
     
         PROC EGM_start_stream_pos()
@@ -1385,4 +1406,3 @@ MODULE tcp
     
 
 ENDMODULE
-
