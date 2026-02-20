@@ -84,6 +84,9 @@ MODULE tcp
     CONST egm_minmax egm_minmax_lin:=[-0.1,+0.1];
     CONST egm_minmax egm_minmax_rot:=[-0.1,+0.1];
     
+    PERS Dnum egm_data_from_sensor{40};
+    
+    
     PROC main()      
         
 
@@ -138,66 +141,7 @@ MODULE tcp
         ! Waiting for a connection request
         WHILE TRUE DO
             
-            !While the egm is being streamed - run to all of the positions
-            WHILE egm_running DO
-                
-                !EGM pose mode
-                IF egm_pose THEN
-                   IF egm_speed THEN                 
-                              
-                        EGMActPose egmID, \Tool:= sph_end_eff, \DIFromSensor:= egm_stop,
-                        posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
-                        \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
-                        \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
-                        \MaxSpeedDeviation:= 50;
-                        
-                        EGMRunPose egmID, EGM_STOP_HOLD, 
-                            \x, \y, \z,
-                            \PosCorrGain:= 0;
-                    ELSE
-                        
-                           
-                        EGMActPose egmID, \Tool:= sph_end_eff, \DIFromSensor:= egm_stop,
-                            posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
-                        \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
-                        \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
-                        \MaxSpeedDeviation:= 50;
-                        
-                        EGMRunPose egmID, EGM_STOP_HOLD, 
-                            \x, \y, \z,
-                            \PosCorrGain:= 1;           
-                     
-            
-                    ENDIF
-                !EGM joint mode  
-                ELSE
-                    IF egm_speed THEN
-                        EGMActJoint egmID , \DIFromSensor:= egm_stop,\MaxSpeedDeviation:= 50;
-                        
-                        EGMRunJoint EGMid, EGM_STOP_HOLD,
-                            \J1, \J2, \J3, \J4, \J5, \J6 
-                            \PosCorrGain := 0;   
-                    ELSE
-                        EGMActJoint egmID, \DIFromSensor:= egm_stop, \MaxSpeedDeviation:= 50;
-                        
-                        EGMRunJoint EGMid, EGM_STOP_HOLD,
-                            \J1, \J2, \J3, \J4, \J5, \J6 
-                            \PosCorrGain := 1;
-                    ENDIF
-                ENDIF
-                
-                !Get the EGM state
-                egm_state := EgmGetState(egmID);
-                
-                
-                !if egm signalled to stop by client
-                IF egm_stop = 1 THEN
-                    EGMStop egmID, EGM_STOP_HOLD;
-                    egm_running := FALSE;
-                ENDIF
-                            
-            ENDWHILE
-            
+          
             !if the real robot - check in bounds
             IF RobOS() THEN            
                 in_bounds_check;            
@@ -497,13 +441,13 @@ MODULE tcp
         CASE "EGJT":
             EGM_connect_joint;            
             
-        !Starts an EGM stream in speed control mode
+        !Starts an EGM stream in speed (linear) control mode
         CASE "EGSS":
             EGM_start_stream_speed;
             
          !Starts an EGM stream in position control mode
         CASE "EGST":
-            EGM_start_stream_pos;
+            EGM_start_stream;
             
             
         !Stops the EGM stream    
@@ -1336,14 +1280,6 @@ MODULE tcp
         ENDIF        
           
         
-        EGMActPose egmID, \Tool:= sph_end_eff, \DIFromSensor:=egm_stop, posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
-            \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
-            \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
-            \MaxSpeedDeviation:= 50;
-            
-            
-        egm_pose := TRUE;
-        
         TPWrite "UDP (pose mode) Connected!";   
         
     ENDPROC
@@ -1370,7 +1306,7 @@ MODULE tcp
         ENDIF        
         
         !Enable the joint
-        EGMActJoint egmID \MaxSpeedDeviation:= 50;
+        EGMActJoint egmID,\DataFromSensor:= egm_data_from_sensor, \MaxSpeedDeviation:= 50;
           
         egm_pose := FALSE;
         
@@ -1383,19 +1319,84 @@ MODULE tcp
     PROC EGM_start_stream_speed()
         EGMStreamStart egmID;
         resp("Stream started");     
+      
+        egm_data_from_sensor{1} := 0;
         
-        egm_running := TRUE;
-        egm_speed := TRUE;
         
         
+        EGMActPose egmID, \Tool:= sph_end_eff, \DataFromSensor:= egm_data_from_sensor,
+                        posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
+                        \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
+                        \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
+                        \MaxSpeedDeviation:= 50;
+                        
+        EGMRunPose egmID, EGM_STOP_HOLD \NoWaitCond, 
+            \x, \y, \z,
+            \PosCorrGain:= 0;            
+            
+        EGMWaitCond egmId;
+        
+        EGMStop egmId, EGM_STOP_HOLD;
         
     ENDPROC
     
-        PROC EGM_start_stream_pos()
+    PROC EGM_start_stream()
         EGMStreamStart egmID;
         resp("Stream started");               
-        egm_running := TRUE;
-        egm_speed := FALSE;        
+       
+        egm_data_from_sensor{1} := 0;
+           
+        EGMActPose egmID, \Tool:= sph_end_eff, \DataFromSensor:= egm_data_from_sensor,
+            posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
+        \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
+        \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
+        \MaxSpeedDeviation:= 50;
+        
+        EGMRunPose egmID, EGM_STOP_HOLD, 
+            \x, \y, \z,
+            \PosCorrGain:= 1;       
+            
+        EGMWaitCond egmId;
+        
+        EGMStop egmId, EGM_STOP_HOLD;
+    ENDPROC
+    
+    PROC EGM_start_stream_joint()
+        
+         EGMStreamStart egmID;
+        resp("Stream started");               
+       
+        egm_data_from_sensor{1} := 0;
+           
+       EGMActJoint egmID, \DataFromSensor:= egm_data_from_sensor, \MaxSpeedDeviation:= 50;
+                    
+        EGMRunJoint EGMid, EGM_STOP_HOLD,
+            \J1, \J2, \J3, \J4, \J5, \J6 
+            \PosCorrGain := 1;
+            
+        EGMWaitCond egmId;
+        
+        EGMStop egmId, EGM_STOP_HOLD;
+        
+    ENDPROC
+    
+       
+    PROC EGM_start_stream_speed_joint()
+        
+         EGMStreamStart egmID;
+        resp("Stream started");               
+       
+        egm_data_from_sensor{1} := 0;
+           
+       EGMActJoint egmID, \DataFromSensor:= egm_data_from_sensor, \MaxSpeedDeviation:= 50;
+                    
+        EGMRunJoint EGMid, EGM_STOP_HOLD,
+            \J1, \J2, \J3, \J4, \J5, \J6 
+            \PosCorrGain := 0;
+            
+        EGMWaitCond egmId;
+        
+        EGMStop egmId, EGM_STOP_HOLD;
         
     ENDPROC
     
