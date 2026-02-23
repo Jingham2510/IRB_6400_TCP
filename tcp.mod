@@ -545,8 +545,8 @@ MODULE tcp
         
         curr_targ := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);
         
-        !Send all of the euler angles
-        resp("[" + ValToStr(EulerZYX(\X, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Y, curr_targ.rot)) + "," + ValToStr(EulerZYX(\Z, curr_targ.rot)) + "]");
+        !Send the quartenion
+        resp("[" + ValToStr(curr_targ.rot.q1) + "," + ValToStr(curr_targ.rot.q2) + "," + ValToStr(curr_targ.rot.q3) + ValToStr(curr_targ.rot.q4) + "]");
         
     
         
