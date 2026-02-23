@@ -546,7 +546,7 @@ MODULE tcp
         curr_targ := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);
         
         !Send the quartenion
-        resp("[" + ValToStr(curr_targ.rot.q1) + "," + ValToStr(curr_targ.rot.q2) + "," + ValToStr(curr_targ.rot.q3) + ValToStr(curr_targ.rot.q4) + "]");
+        resp("[" + ValToStr(curr_targ.rot.q1) + "," + ValToStr(curr_targ.rot.q2) + "," + ValToStr(curr_targ.rot.q3) + "," + ValToStr(curr_targ.rot.q4) + "]");
         
     
         
