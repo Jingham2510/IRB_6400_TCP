@@ -324,6 +324,10 @@ MODULE tcp
         CASE "EGSP":
             EGM_stop_stream;
             
+        !Moves the robot to the home position
+        CASE "HOME":
+            go_home
+            
         !if unprogrammed/unknown command is sent    
         DEFAULT:
             TPWrite "INVALID CMD: " + cmd_ID;
@@ -638,8 +642,6 @@ MODULE tcp
     !Connects to the EGM host server  setup for xyz cartesian control
     PROC EGM_connect_pose() 
         
-        resp("opening UDP");
-        
         !Reset the EGM ID just incase
         EgmReset egmID;
         
@@ -654,7 +656,7 @@ MODULE tcp
              EGMSetupUC ROB_1, egmID, "default", "LocalUcDev", \Pose, \CommTimeout:=100000;     
         ENDIF        
           
-        
+        resp("opening UDP");
         TPWrite "UDP (pose mode) Connected!";   
         
     ENDPROC
