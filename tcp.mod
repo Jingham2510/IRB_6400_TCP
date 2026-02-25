@@ -326,7 +326,7 @@ MODULE tcp
             
         !Moves the robot to the home position
         CASE "HOME":
-            go_home
+            go_home;
             
         !if unprogrammed/unknown command is sent    
         DEFAULT:
@@ -786,3 +786,4 @@ MODULE tcp
     
 
 ENDMODULE
+
