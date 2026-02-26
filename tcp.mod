@@ -116,7 +116,7 @@ MODULE tcp
           
             !if the real robot - check in bounds
             IF RobOS() THEN            
-                in_bounds_check;            
+                !in_bounds_check;            
             ENDIF            
             
             !Recieve the string
@@ -392,7 +392,7 @@ MODULE tcp
 
         !get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=curr_tool \WObj:=wobj0); 
+        curr_trgt := CRobT(\Tool:= curr_tool, \WObj:= wobj0); 
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(ori,rob_trgt.rot);
@@ -404,9 +404,13 @@ MODULE tcp
         rob_trgt.extax := curr_trgt.extax;
 
         !if the orientation req is okay - move the robots
+        
         IF ok THEN                   
+            
+            ConfL \Off;
             !Move the robot to the target
-            MoveJ rob_trgt, v100, fine, tool0;
+            MoveL rob_trgt, v100, fine, curr_tool, \WObj:=wobj0;
+            ConfL \On;
             resp("STOR OK");
         ENDIF
 
@@ -438,12 +442,12 @@ MODULE tcp
 
             IF conc_count<5 THEN
 
-                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=5 ,fine, curr_tool;
+                MoveAbsJ jnt_trgt,des_speed \T:=10 ,fine, curr_tool;
 
                 conc_count:=conc_count+1;
 
             ELSE
-                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=5,fine,curr_tool;
+                MoveAbsJ jnt_trgt,des_speed \T:=10,fine,curr_tool;
 
             ENDIF
 
