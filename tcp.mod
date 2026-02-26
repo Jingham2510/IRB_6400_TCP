@@ -10,7 +10,7 @@ MODULE tcp
     
     
     !no tool
-    PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
+    PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0.0001, [0,0,0.0001], [1,0,0,0], 0, 0, 0]];
     
     
      !Spherical end effector tool
