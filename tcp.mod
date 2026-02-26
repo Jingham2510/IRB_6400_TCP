@@ -147,14 +147,9 @@ MODULE tcp
     ENDPROC
     
       PROC go_home()
-         !Get the TCPs current position
-        VAR robtarget curr_pos;
+        VAR jointtarget home_joints := [[85.0, -15, 33.11, 0, 58, 72], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];        
 
-        VAR robtarget rob_home_pos; 
-        curr_pos :=  CRobT();
-        rob_home_pos := [[220.0, 1355.0, 955.0], curr_pos.rot, curr_pos.robconf, [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
-
-        MoveL rob_home_pos, des_speed, fine, tool0;
+        MoveAbsJ home_joints, des_speed \T:=5, fine, curr_tool;
 
     ENDPROC
 
