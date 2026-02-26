@@ -13,10 +13,12 @@ MODULE tcp
      PERS tooldata sph_end_eff := [TRUE, [[0, 0, 100], [1, 0, 0, 0]],
                         [1.0687, [0, 0, 42.664],[1, 0, 0, 0], 0, 0, 0]];
     
+                        
+    VAR tooldata curr_tool := tool0;
     
     VAR loaddata test_load := [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0];
     
-    
+       
     
     VAR fcforcevector force_vector;
     
@@ -80,7 +82,7 @@ MODULE tcp
      
             !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration   
             
-            MoveL RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), 0, 0, -10), v100, fine, sph_end_eff;            
+            MoveL RelTool( CRobT(\Tool:=curr_tool \WObj:=wobj0), 0, 0, -10), v100, fine, curr_tool;            
             
             test_load := FCLoadId();           
             
@@ -351,7 +353,7 @@ MODULE tcp
         VAR bool ok;
         !Get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);        
+        curr_trgt := CRobT(\Tool:=curr_tool \WObj:=wobj0);        
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(target_pos,rob_trgt_pos.trans);
@@ -368,7 +370,7 @@ MODULE tcp
 
         IF ok THEN                   
             !Move the robot to the target
-            MoveJ rob_trgt_pos, des_speed, fine, sph_end_eff;
+            MoveJ rob_trgt_pos, des_speed, fine, curr_tool;
 
             resp("MVTO OK");
             
@@ -390,7 +392,7 @@ MODULE tcp
 
         !get the current target
         VAR robtarget curr_trgt;
-        curr_trgt := CRobT(\Tool:=sph_end_eff \WObj:=wobj0); 
+        curr_trgt := CRobT(\Tool:=curr_tool \WObj:=wobj0); 
         
         !Should be able to convert to the robot target directly
         ok:= StrToVal(ori,rob_trgt.rot);
@@ -436,12 +438,12 @@ MODULE tcp
 
             IF conc_count<5 THEN
 
-                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=0.001 ,fine, sph_end_eff;
+                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=0.001 ,fine, curr_tool;
 
                 conc_count:=conc_count+1;
 
             ELSE
-                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=0.001,fine,sph_end_eff;
+                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=0.001,fine,curr_tool;
 
             ENDIF
 
@@ -522,13 +524,13 @@ MODULE tcp
         
         
         !Move the tool as described
-        !MoveLSync RelTool( CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, sph_end_eff, "report_pos_and_force";
+        !MoveLSync RelTool( CRobT(\Tool:=curr_tool \WObj:=wobj0), dX, dY, dZ , \Rx:= 0, \Ry:= 0. \Rz:= 0), v100, fine, curr_tool, "report_pos_and_force";
         
         IF conc_count < 5 THEN
-            MoveL \conc, RelTool (CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), des_speed, fine, sph_end_eff;
+            MoveL \conc, RelTool (CRobT(\Tool:=curr_tool \WObj:=wobj0), dX, dY, dZ), des_speed, fine, curr_tool;
             Incr conc_count;        
         ELSE
-            MoveL RelTool (CRobT(\Tool:=sph_end_eff \WObj:=wobj0), dX, dY, dZ), des_speed, fine, sph_end_eff;
+            MoveL RelTool (CRobT(\Tool:=curr_tool \WObj:=wobj0), dX, dY, dZ), des_speed, fine, curr_tool;
             conc_count := 0;
         ENDIF
         
@@ -539,7 +541,7 @@ MODULE tcp
     
     !Sends the current position to the tcp socket
     PROC report_pos()        
-        resp(ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)));  
+        resp(ValToStr(CPos(\Tool:=curr_tool \WObj:=wobj0)));  
     ENDPROC
     
     !Sends the current orientation to the tcp socket
@@ -547,7 +549,7 @@ MODULE tcp
         
         VAR robtarget curr_targ;
         
-        curr_targ := CRobT(\Tool:=sph_end_eff \WObj:=wobj0);
+        curr_targ := CRobT(\Tool:=curr_tool \WObj:=wobj0);
         
         !Send the quartenion
         resp("[" + ValToStr(curr_targ.rot.q1) + "," + ValToStr(curr_targ.rot.q2) + "," + ValToStr(curr_targ.rot.q3) + "," + ValToStr(curr_targ.rot.q4) + "]");
@@ -562,7 +564,7 @@ MODULE tcp
     
         !Check if the robot has actual forces to measure
         IF ROBOS() THEN        
-            force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
+            force_vector := FCGetForce(\Tool:=curr_tool \ContactForce);
             resp(ValToStr(force_vector));
             
            
@@ -582,9 +584,9 @@ MODULE tcp
     !Sends the current position and force to the tcp socket 
     PROC report_pos_and_force()
         
-        resp(ValToStr(CPos(\Tool:=sph_end_eff \WObj:=wobj0)));
+        resp(ValToStr(CPos(\Tool:=curr_tool \WObj:=wobj0)));
         
-        force_vector := FCGetForce(\Tool:=sph_end_eff \ContactForce);
+        force_vector := FCGetForce(\Tool:=curr_tool \ContactForce);
         
         resp(ValToStr(force_vector));
         
@@ -701,7 +703,7 @@ MODULE tcp
         
         
         
-        EGMActPose egmID, \Tool:= sph_end_eff, \DataFromSensor:= egm_data_from_sensor,
+        EGMActPose egmID, \Tool:= curr_tool, \DataFromSensor:= egm_data_from_sensor,
                         posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
                         \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
                         \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
@@ -723,7 +725,7 @@ MODULE tcp
        
         egm_data_from_sensor{1} := 0;
            
-        EGMActPose egmID, \Tool:= sph_end_eff, \DataFromSensor:= egm_data_from_sensor,
+        EGMActPose egmID, \Tool:= curr_tool, \DataFromSensor:= egm_data_from_sensor,
             posecor,EGM_FRAME_BASE, posesense,EGM_FRAME_BASE,
         \X:= egm_minmax_lin,\Y:= egm_minmax_lin, \Z:= egm_minmax_lin,
         \rx:=egm_minmax_rot, \ry:=egm_minmax_rot, \rz:=egm_minmax_rot,
@@ -786,4 +788,3 @@ MODULE tcp
     
 
 ENDMODULE
-
