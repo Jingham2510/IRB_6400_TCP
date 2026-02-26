@@ -10,7 +10,7 @@ MODULE tcp
     
     
     !no tool
-    PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0, [0,0,0], [1,0,0,0], 0, 0, 0]];
+    PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
     
     
      !Spherical end effector tool
@@ -443,18 +443,18 @@ MODULE tcp
 
             IF conc_count<5 THEN
 
-                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=0.001 ,fine, curr_tool;
+                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=5 ,fine, curr_tool;
 
                 conc_count:=conc_count+1;
 
             ELSE
-                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=0.001,fine,curr_tool;
+                MoveAbsJ\Conc,jnt_trgt,des_speed \T:=5,fine,curr_tool;
 
             ENDIF
 
 
             !Let the client know the move happened
-            !resp("STJT CMPL");
+            resp("STJT CMPL");
 
         ELSE
             !If something breaks
