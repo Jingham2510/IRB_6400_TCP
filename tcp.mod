@@ -10,7 +10,7 @@ MODULE tcp
     
     
     !no tool
-    PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0.0001, [0,0,0.0001], [1,0,0,0], 0, 0, 0]];
+    PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
     
     
      !Spherical end effector tool
@@ -78,7 +78,9 @@ MODULE tcp
         
 
         IF TRUE THEN
-           go_home;
+           !go_home(FALSE);
+           go_zero;
+           EXIT;
         ENDIF
         
         !Checks if force calibraiton is required or not
@@ -146,10 +148,24 @@ MODULE tcp
 
     ENDPROC
     
-      PROC go_home()
+      PROC go_home(bool respond)
         VAR jointtarget home_joints := [[85.0, -15, 33.11, 0, 58, 72], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];        
 
         MoveAbsJ home_joints, des_speed \T:=5, fine, curr_tool;
+        
+        IF respond THEN
+            resp("At home");
+        ENDIF
+        
+
+    ENDPROC
+    
+    PROC go_zero()
+        VAR jointtarget zero_joints := [[0, 0, 0, 0, 0, 0], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];        
+
+        MoveAbsJ zero_joints, des_speed \T:=5, fine, curr_tool;       
+        
+        
 
     ENDPROC
 
@@ -328,7 +344,7 @@ MODULE tcp
             
         !Moves the robot to the home position
         CASE "HOME":
-            go_home;
+            go_home(TRUE);
             
         !if unprogrammed/unknown command is sent    
         DEFAULT:
