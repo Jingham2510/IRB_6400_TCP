@@ -78,9 +78,9 @@ MODULE tcp
         
 
         IF TRUE THEN
-           !go_home(FALSE);
-           go_zero;
-           EXIT;
+           go_home(FALSE);
+           !go_zero;
+           !EXIT;
         ENDIF
         
         !Checks if force calibraiton is required or not
