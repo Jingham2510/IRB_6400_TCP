@@ -12,10 +12,18 @@ MODULE tcp
     !no tool
     PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
     
-    
+
      !Spherical end effector tool
      PERS tooldata sph_end_eff := [TRUE, [[0, 0, 100], [1, 0, 0, 0]],
-                        [1.0687, [0, 0, 42.664],[1, 0, 0, 0], 0, 0, 0]];
+                        [1.0687, [0, 0, 42.33],[1, 0, 0, 0], 0, 0, 0]];
+                        
+    !Deadweight loads
+    PERS tooldata ally_dead_weight := [TRUE, [[0, 0, 136.825], [1, 0, 0, 0]],
+                                    [1.0048, [0, 0, 51.34], [1, 0, 0, 0], 0, 0, 0]];
+                                    
+    PERS tooldata heavy_dead_weight := [TRUE, [[0, 0, 140.68], [1, 0, 0, 0]],
+                                    [1.743, [0, 0, 90.83], [1, 0, 0, 0], 0, 0, 0]];
+        
     
                         
     PERS tooldata curr_tool;
@@ -79,8 +87,6 @@ MODULE tcp
 
         IF TRUE THEN
            go_home(FALSE);
-           !go_zero;
-           !EXIT;
         ENDIF
         
         !Checks if force calibraiton is required or not
@@ -156,15 +162,6 @@ MODULE tcp
         IF respond THEN
             resp("At home");
         ENDIF
-        
-
-    ENDPROC
-    
-    PROC go_zero()
-        VAR jointtarget zero_joints := [[0, 0, 0, 0, 0, 0], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];        
-
-        MoveAbsJ zero_joints, des_speed \T:=5, fine, curr_tool;       
-        
         
 
     ENDPROC
@@ -584,7 +581,9 @@ MODULE tcp
     
         !Check if the robot has actual forces to measure
         IF ROBOS() THEN        
+            !Get the contact force (i.e. account for gravity)
             force_vector := FCGetForce(\Tool:=curr_tool \ContactForce);
+            
             resp(ValToStr(force_vector));
             
            
