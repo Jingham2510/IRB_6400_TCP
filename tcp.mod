@@ -87,6 +87,8 @@ MODULE tcp
 
         IF TRUE THEN
            go_home(FALSE);
+           !go_zero;
+           EXIT;
         ENDIF
         
         !Checks if force calibraiton is required or not
@@ -166,6 +168,15 @@ MODULE tcp
 
     ENDPROC
 
+        
+    PROC go_zero()
+        VAR jointtarget zero_joints := [[0, 0, 0, 0, 0, 0], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];        
+
+        MoveAbsJ zero_joints, des_speed \T:=5, fine, curr_tool;       
+        
+        
+
+    ENDPROC
     
     !Convenience wrapper
     PROC resp(string msg)        
