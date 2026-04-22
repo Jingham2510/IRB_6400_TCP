@@ -79,7 +79,7 @@ MODULE tcp
     PROC main()      
         
         !The tool currently being used
-        curr_tool := no_tool;
+        curr_tool := sph_end_eff;
         
 
         SetDo move_started, 0;
@@ -88,7 +88,7 @@ MODULE tcp
         IF TRUE THEN
            go_home(FALSE);
            !go_zero;
-           EXIT;
+           !EXIT;
         ENDIF
         
         !Checks if force calibraiton is required or not
