@@ -11,16 +11,12 @@ MODULE ROB_CNTRL
     PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
 
      !Old spherical end effector tool
-     PERS tooldata sph_end_eff := [TRUE, [[0, 0, 100], [1, 0, 0, 0]],
+     PERS tooldata old_sph_end_eff := [TRUE, [[0, 0, 100], [1, 0, 0, 0]],
                         [1.0687, [0, 0, 42.33],[1, 0, 0, 0], 0, 0, 0]];
 
-    !Deadweight loads
-    PERS tooldata ally_dead_weight := [TRUE, [[0, 0, 136.825], [1, 0, 0, 0]],
-                                    [1.0048, [0, 0, 51.34], [1, 0, 0, 0], 0, 0, 0]];
-
-    PERS tooldata heavy_dead_weight := [TRUE, [[0, 0, 140.68], [1, 0, 0, 0]],
-                                    [1.743, [0, 0, 90.83], [1, 0, 0, 0], 0, 0, 0]];
-
+    !Toolholder + spherical end effector tool description
+    PERS tooldata th_sphere := [TRUE, [[0, 0, 350] [1, 0, 0, 0]],
+     [5.0925, [0, 0, 75],[1,0,0,0],0,0,0]];
 
 
     PERS tooldata curr_tool;
@@ -68,7 +64,7 @@ MODULE ROB_CNTRL
     PROC main()
 
         !The tool currently being used
-        curr_tool := sph_end_eff;
+        curr_tool := th_sphere;
         !curr_tool := no_tool;
 
         IF TRUE THEN
