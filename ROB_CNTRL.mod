@@ -15,21 +15,23 @@ MODULE ROB_CNTRL
                         [1.0687, [0, 0, 42.33],[1, 0, 0, 0], 0, 0, 0]];
 
     !Toolholder + spherical end effector tool description
-    PERS tooldata th_sphere := [TRUE, [[0, 0, 350] [1, 0, 0, 0]],
-     [5.0925, [0, 0, 75],[1,0,0,0],0,0,0]];
+    PERS tooldata th_sphere := [TRUE, [[0, 0, 350], [1, 0, 0, 0]],
+     [5.08, [0, 0, 70],[1,0,0,0],0,0,0]];
+
+    PERS loaddata th_sphere_load := [5.4, [0, 0, 70],[1,0,0,0],0,0,0];
 
 
     PERS tooldata curr_tool;
 
-    VAR loaddata test_load := [0.001, [0, 0, 0.001],[1, 0, 0, 0], 0, 0, 0];
+    PERS loaddata curr_load := [0.001,[0,0,0.001],[1,0,0,0],0,0,0];
 
     VAR fcforcevector force_vector;
 
 
     !If force control has been calibrated
-    VAR bool fc_cal := FALSE;
+    PERS bool fc_cal := FALSE;
 
-    !Force control flags/values
+    !Force control flags/valus
     VAR bool fc_mode := FALSE;
 
     VAR string force_ax := "na";
@@ -62,15 +64,16 @@ MODULE ROB_CNTRL
     PERS Dnum egm_data_from_sensor{40};
 
     PROC main()
+        !Clear all writing on pendant
+        TPErase;
 
         !The tool currently being used
         curr_tool := th_sphere;
-        !curr_tool := no_tool;
 
         IF TRUE THEN
-           !go_home(FALSE);
-           go_zero;
-           EXIT;
+           go_home(FALSE);
+           !go_zero;
+           !EXIT;
         ENDIF
 
         !Checks if force calibraiton is required or not
@@ -78,16 +81,20 @@ MODULE ROB_CNTRL
         IF ROBOS() AND (NOT fc_cal) THEN
 
             !Calibrate the load sensor - the documentation reccomends making a fine movement before the calibration
-
             MoveL RelTool( CRobT(\Tool:=curr_tool \WObj:=wobj0), 0, 0, -10), v100, fine, curr_tool;
 
-            test_load := FCLoadId();
-
-            FCCalib test_load;
+            curr_load := FCLoadId();
 
             fc_cal := TRUE;
 
         ENDIF
+
+        FCCalib curr_load;
+
+        !Get the contact force (i.e. account for gravity)
+        force_vector := FCGetForce(\Tool:=curr_tool \ContactForce);
+
+        TpWrite ValToStr(force_vector);
 
 
         !Goto for if the socket closes
