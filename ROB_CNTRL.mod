@@ -7,16 +7,23 @@ MODULE ROB_CNTRL
     VAR string receive_string;
     VAR string client_ip;
 
-    !no tool
-    PERS tooldata no_tool := [TRUE, [[0,0,0], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
+    !no tool - z = 100mm accounting for force sensor setup
+    PERS tooldata no_tool := [TRUE, [[0,0,100], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
 
      !Old spherical end effector tool
      PERS tooldata old_sph_end_eff := [TRUE, [[0, 0, 100], [1, 0, 0, 0]],
                         [1.0687, [0, 0, 42.33],[1, 0, 0, 0], 0, 0, 0]];
 
-    !Toolholder + spherical end effector tool description
-    PERS tooldata th_sphere := [TRUE, [[0, 0, 350], [1, 0, 0, 0]],
-     [5.08, [0, 0, 70],[1,0,0,0],0,0,0]];
+
+    !Max's plate end effector + force sensor offset (100mm)
+    PERS tooldata th_wide_plate := [TRUE, [[0, 0, 340], [1, 0, 0, 0]],
+                    0.0, [0, 0, 197], [1, 0, 0, 0], 0, 0, 0]];
+
+
+    !Toolholder + spherical end effector tool description + force sensor offset (100mm)
+    !NB: The centre of mass has been update to onclude the offset from the force sensor - (is this correct?)
+    PERS tooldata th_sphere := [TRUE, [[0, 0, 450], [1, 0, 0, 0]],
+     [5.08, [0, 0, 170],[1,0,0,0],0,0,0]];
 
     PERS loaddata th_sphere_load := [5.4, [0, 0, 70],[1,0,0,0],0,0,0];
 
@@ -68,7 +75,7 @@ MODULE ROB_CNTRL
         TPErase;
 
         !The tool currently being used
-        curr_tool := th_sphere;
+        curr_tool := th_wide_plate;
 
         IF TRUE THEN
            go_home(FALSE);
@@ -143,7 +150,7 @@ MODULE ROB_CNTRL
     ENDPROC
 
       PROC go_home(bool respond)
-        VAR jointtarget home_joints := [[85.0, -15, 32.63, 0, 56.64, 72], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];
+        VAR jointtarget home_joints := [[85.0, -15, 32.63, 0, 56.64, 63.0], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];
 
         MoveAbsJ home_joints, des_speed \T:=5, fine, curr_tool;
 
@@ -708,12 +715,22 @@ MODULE ROB_CNTRL
 
 
     PROC EGM_start_stream_speed()
+        VAR robtarget curr_pos;
         EGMStreamStart egmID;
+        
         resp("Stream started");
 
         !Turn on force control - but allow cartesian movement control
         FCSetDirections [FALSE,FALSE,FALSE,FALSE,FALSE,FALSE];
         FCAllowMove TRUE;
+
+        curr_pos :=  CRobT();
+
+        !Setup a bounding box that allows the robot to be positioned anywhere
+        FCSupvPos \PosSupvFrame:=[curr_pos.trans, [1,0,0,0]]
+                    \Box:=[-3500,3500,-3500,3500,-3500,3500];
+
+
         FCAct curr_tool;
 
         egm_data_from_sensor{1} := 0;
