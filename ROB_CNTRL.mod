@@ -154,7 +154,7 @@ MODULE ROB_CNTRL
     ENDPROC
 
       PROC go_home(bool respond)
-        VAR jointtarget home_joints := [[85.0, -15, 32.63, 0, 56.64, 63.0], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];
+        VAR jointtarget home_joints := [[79.52, -18.62, 15.40, 0, 74.17, 60.46], [0, 9E9, 9E9, 9E9, 9E9, 9E9]];
 
         MoveAbsJ home_joints, des_speed \T:=5, fine, curr_tool;
 
