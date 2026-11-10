@@ -15,9 +15,13 @@ MODULE ROB_CNTRL
                         [1.0687, [0, 0, 42.33],[1, 0, 0, 0], 0, 0, 0]];
 
 
-    !Max's plate end effector + force sensor offset (100mm)
-    PERS tooldata th_wide_plate := [TRUE, [[0, 0, 340], [1, 0, 0, 0]],
-                    0.0, [0, 0, 197], [1, 0, 0, 0], 0, 0, 0]];
+    !Toolholder + Max's plate end effector + force sensor offset (100mm)
+    PERS tooldata th_wide_plate := [TRUE, [[0, 0, 536], [1, 0, 0, 0]],
+                    [6.1536, [0, 0, 197], [1, 0, 0, 0], 0, 0, 0]];
+
+    !Toolholder + sand pourer  + force sensor offset (100mm)
+    PERS tooldata th_pourer := [TRUE, [[0, 0, 1044.31], [1, 0, 0, 0]],
+                    [2.65, [0, 0, 400], [1, 0, 0, 0], 0, 0, 0]];
 
 
     !Toolholder + spherical end effector tool description + force sensor offset (100mm)
@@ -75,7 +79,7 @@ MODULE ROB_CNTRL
         TPErase;
 
         !The tool currently being used
-        curr_tool := th_wide_plate;
+        curr_tool := th_sphere;
 
         IF TRUE THEN
            go_home(FALSE);
