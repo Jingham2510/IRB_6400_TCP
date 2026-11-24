@@ -7,34 +7,33 @@ MODULE ROB_CNTRL
     VAR string receive_string;
     VAR string client_ip;
 
-    !no tool - z = 100mm accounting for force sensor setup
-    PERS tooldata no_tool := [TRUE, [[0,0,100], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
+    !no tool - z = 97mm accounting for force sensor setup
+    PERS tooldata no_tool := [TRUE, [[0,0,97], [1,0,0,0]],[0.001, [0,0,0.001], [1,0,0,0], 0, 0, 0]];
 
      !Old spherical end effector tool
      PERS tooldata old_sph_end_eff := [TRUE, [[0, 0, 100], [1, 0, 0, 0]],
                         [1.0687, [0, 0, 42.33],[1, 0, 0, 0], 0, 0, 0]];
 
 
-    !Toolholder + Max's plate end effector + force sensor offset (100mm)
-    PERS tooldata th_wide_plate := [TRUE, [[0, 0, 536], [1, 0, 0, 0]],
+    !Toolholder + Max's plate end effector + force sensor offset (97mm)
+    PERS tooldata th_wide_plate := [TRUE, [[0, 0, 533], [1, 0, 0, 0]],
                     [6.1536, [0, 0, 197], [1, 0, 0, 0], 0, 0, 0]];
 
-    !Toolholder + sand pourer  + force sensor offset (100mm)
+    !Toolholder + sand pourer  + force sensor offset (97mm)
     PERS tooldata th_pourer := [TRUE, [[0, 0, 1044.31], [1, 0, 0, 0]],
-                    [2.65, [0, 0, 400], [1, 0, 0, 0], 0, 0, 0]];
+                    [2.65, [0, 0, 397], [1, 0, 0, 0], 0, 0, 0]];
 
 
-    !Toolholder + spherical end effector tool description + force sensor offset (100mm)
-    !NB: The centre of mass has been update to onclude the offset from the force sensor - (is this correct?)
-    PERS tooldata th_sphere := [TRUE, [[0, 0, 450], [1, 0, 0, 0]],
+    !Toolholder + spherical end effector tool description + force sensor offset (97mm)
+    !CoG is defined relative to tool0 (robot flange)
+    PERS tooldata th_sphere := [TRUE, [[0, 0, 447], [1, 0, 0, 0]],
      [5.08, [0, 0, 170],[1,0,0,0],0,0,0]];
 
-    PERS loaddata th_sphere_load := [5.4, [0, 0, 70],[1,0,0,0],0,0,0];
 
 
     PERS tooldata curr_tool;
 
-    PERS loaddata curr_load := [0.001,[0,0,0.001],[1,0,0,0],0,0,0];
+    PERS loaddata curr_load := [5.08,[0,0,170],[1,0,0,0],0,0,0];
 
     VAR fcforcevector force_vector;
 
@@ -54,10 +53,6 @@ MODULE ROB_CNTRL
     !ROBOT VARIABLES
     VAR num des_speed_num := 50;
     VAR speeddata des_speed := [50, 500, 5000, 1000];
-
-
-    !Used during phase 1 of the geo loading
-    VAR bool vert_force_found := FALSE;
 
     !EGM DATA
     VAR egmident egmID;
